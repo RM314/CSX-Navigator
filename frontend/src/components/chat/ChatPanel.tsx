@@ -6,6 +6,8 @@ import { ChatComposer } from './ChatComposer';
 import { ChatMessages } from './ChatMessages';
 import { ContextPanel } from './ContextPanel';
 
+const baseUrl = import.meta.env.VITE_API_BASE_URL;
+
 export function ChatPanel() {
   const [messages, setMessages] = useState<ChatMessage[]>(INITIAL_MESSAGES);
   const [selectedSource, setSelectedSource] = useState<string | null>(
@@ -72,8 +74,21 @@ export function ChatPanel() {
     setInputValue('');
     setIsSending(true);
 
-    const fakeAnswer =
-      'One example would be a shared neighborhood workshop or kitchen. Once such a place exists, people do not only meet there physically, they also begin to coordinate routines around it. They may repair objects together, cook together, exchange tools, or organize regular events. In that way, the space supports new local habits by making repeated collective action easier.';
+    //const fakeAnswer =
+    //  'One example would be a shared neighborhood workshop or kitchen. Once such a place exists, people do not only meet there physically, they also begin to coordinate routines around it. They may repair objects together, cook together, exchange tools, or organize regular events. In that way, the space supports new local habits by making repeated collective action easier.';
+
+    console.log("fetching ",`${baseUrl}/api/chat`)
+    const res = await fetch(`${baseUrl}/api/chat`
+      , {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ message: text }),
+    });
+
+    const data = await res.json();
+
+    const fakeAnswer=data.answer;
+
 
     await streamAssistantMessage(fakeAnswer);
 
