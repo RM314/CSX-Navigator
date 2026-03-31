@@ -1,11 +1,17 @@
-import { SOURCE_CHUNKS } from '../../data';
+//import { SOURCE_CHUNKS } from '../../data';
+
+import { type chunkType } from '../../rag/types';
 
 type ContextPanelProps = {
   selectedSource: string | null;
+  chunksById: Record<string, chunkType>;
 };
 
-export function ContextPanel({ selectedSource }: ContextPanelProps) {
-  const chunk = selectedSource ? SOURCE_CHUNKS[selectedSource] : null;
+export function ContextPanel({ selectedSource, chunksById}: ContextPanelProps) {
+
+  const s = chunksById && selectedSource ? chunksById[selectedSource] : null;
+
+  console.log("ContextPanel s=",s," selectedSource=",selectedSource," chunksById=",chunksById);
 
   return (
     <aside className="h-fit rounded-[20px] border border-[#d8e0ea] bg-white p-[18px] shadow-[0_16px_36px_rgba(31,41,55,0.08)]">
@@ -22,10 +28,10 @@ export function ContextPanel({ selectedSource }: ContextPanelProps) {
           Selected source chunk
         </h4>
         <div className="mb-2 text-xs text-[#6b7280]">
-          {chunk ? chunk.label : 'Click a source below a message.'}
+          {s ? s.title : 'Click a source below a message.'}
         </div>
         <div className="rounded-xl border border-[#d8e0ea] bg-[#eef3f8] p-3 text-[0.92rem] leading-6 text-[#1f2937]">
-          {chunk ? chunk.text : 'The matching chunk will appear here.'}
+          {s ? s.content : 'The matching chunk will appear here.'}
         </div>
       </div>
     </aside>

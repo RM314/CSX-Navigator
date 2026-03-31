@@ -35,7 +35,6 @@ type Chunk = {
   source: string;
   text: string;
   chunkIndex: number;
-  uuid: string;
 };
 
 type IndexedChunk = Chunk & {
@@ -133,7 +132,6 @@ function splitIntoChunks(doc: SourceDocument): Chunk[] {
         source: doc.source,
         text: chunkText,
         chunkIndex,
-        uuid: crypto.randomUUID()
       });
       chunkIndex += 1;
     }
@@ -222,23 +220,19 @@ async function search(query: string, topK = TOP_K): Promise<SearchResult[]> {
 }
 
 function buildContext(results: SearchResult[]): string {
-  // nur das minimale
   return results
     .map(
       (result, i) =>
         [
           `SOURCE ${i + 1}`,
           `Title: ${result.title}`,
+          `Path: ${result.source}`,
+          `Chunk: ${result.chunkIndex}`,
           "Content:",
           result.text,
         ].join("\n")
     )
     .join("\n\n---\n\n");
-
-// Chunk: ${result.chunkIndex}`,
-//`UUID: ${result.uuid}`,
-//`Path: ${result.source}`,
-
 }
 
 async function answer(question: string) {
@@ -256,7 +250,7 @@ async function answer(question: string) {
   const response = await client.responses.create({
     model: CHAT_MODEL,
     instructions:
-      "You are a CSX knowledge assistant. Answer only from the provided context. If the context is insufficient, say so clearly. Cite sources as [SOURCE 1], [SOURCE 2], [SOURCE 3] etc. Keep the answer focused and concrete.",
+      "You are a CSX knowledge assistant. Answer only from the provided context. If the context is insufficient, say so clearly. Cite sources as [Source 1], [Source 2], etc. Keep the answer focused and concrete.",
     input: [
       {
         role: "user",
@@ -281,7 +275,7 @@ async function answer(question: string) {
   console.log("\n=== SOURCES ===\n");
   results.forEach((result, index) => {
     console.log(
-      `[Source ${index + 1}] score=${result.score.toFixed(4)} title="${result.title}" chunk=${result.chunkIndex} chunkid=${result.uuid}`
+      `[Source ${index + 1}] score=${result.score.toFixed(4)} title="${result.title}" chunk=${result.chunkIndex}`
     );
   });
 }

@@ -6,6 +6,9 @@ import { ChatComposer } from './ChatComposer';
 import { ChatMessages } from './ChatMessages';
 import { ContextPanel } from './ContextPanel';
 
+import { type answerType, type chunkType} from '../../rag/types';
+
+
 const baseUrl = import.meta.env.VITE_API_BASE_URL;
 
 export function ChatPanel() {
@@ -16,7 +19,12 @@ export function ChatPanel() {
   const [inputValue, setInputValue] = useState('');
   const [isSending, setIsSending] = useState(false);
 
-  const streamAssistantMessage = async (fullText: string) => {
+  const [chunksById, setchunksById] = useState<Record<number, chunkType>>({});
+
+  //const [sourcesValue, setSourcesValue] = useState<sourceType[]>([]);
+
+  const streamAssistantMessage = async (answer: answerType) => {
+    const fullText = answer.answer;
     const parts = fullText.match(/.{1,18}(\s|$)/g) || [fullText];
 
     let assistantIndex = -1;
@@ -46,18 +54,29 @@ export function ChatPanel() {
       );
     }
 
+
+    //console.log(answer.sources);
+
     setMessages((prev) =>
       prev.map((message, index) =>
         index === assistantIndex
           ? {
               ...message,
               streaming: false,
-              sources: ['Shared space example', 'Local habit formation'],
+              //sources: ['Shared space example', 'Local habit formation'],
+              sources: answer.sources.map((s,index) => `${index+1} ${s.title}`)
             }
           : message,
       ),
     );
   };
+
+/*
+return items.map((item, index) => ({
+    ...item,
+    title: `${item.title}-${index + 1}`,
+  }));
+*/
 
   const handleSend = async () => {
     const text = inputValue.trim();
@@ -87,10 +106,21 @@ export function ChatPanel() {
 
     const data = await res.json();
 
-    const fakeAnswer=data.answer;
+    //const fakeAnswer=data.answer;
+
+    setchunksById((prev) => ({
+      ...prev,
+      ...Object.fromEntries(data.sources.map((src: chunkType) => [src.chunkIndex, src])),
+    }));
+
+    console.log("Halleluja1");
+    console.log(chunksById);
+    console.log("Halleluja2");
+    console.log(data.sources);
+    console.log("Halleluja3");
 
 
-    await streamAssistantMessage(fakeAnswer);
+    await streamAssistantMessage(data);
 
     setMessages((prev) => [
       ...prev,
@@ -107,7 +137,7 @@ export function ChatPanel() {
 
   return (
     <section className="grid grid-cols-[220px_1fr] gap-5 max-[900px]:grid-cols-1">
-      <ContextPanel selectedSource={selectedSource} />
+      <ContextPanel selectedSource={selectedSource} chunksById={chunksById} />
 
       <section className="grid min-h-[calc(100vh-140px)] grid-rows-[auto_1fr_auto] overflow-hidden rounded-[24px] border border-[#d8e0ea] bg-white shadow-[0_16px_36px_rgba(31,41,55,0.08)]">
         <header className="flex items-center justify-between gap-4 border-b border-[#d8e0ea] px-[22px] py-5">

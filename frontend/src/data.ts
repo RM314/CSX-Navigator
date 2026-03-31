@@ -1,5 +1,6 @@
 import type { ChatMessage, DocumentItem, SourceChunk } from './types';
 
+/*
 export const SOURCE_CHUNKS: Record<string, SourceChunk> = {
   'Community kitchen case study': {
     label: 'Community kitchen case study · chunk 3',
@@ -18,6 +19,7 @@ export const SOURCE_CHUNKS: Record<string, SourceChunk> = {
     text: 'Local habits change when a place enables repeated interaction, lowers the threshold for participation, and links people to shared schedules, tools, and practices.',
   },
 };
+*/
 
 export const INITIAL_MESSAGES: ChatMessage[] = [
   {

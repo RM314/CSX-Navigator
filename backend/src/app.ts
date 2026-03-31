@@ -32,7 +32,8 @@ app.post('/api/chat', async (req, res) => {
 
     return res.json({
       answer: llmAnswer.answer,
-      sources: llmAnswer.sources.map((s) => s.title),
+      //sources: llmAnswer.sources.map((s) => s.title),
+      sources: llmAnswer.sources,
     });
   } catch (error) {
     console.error('Error in /api/chat:', error);
