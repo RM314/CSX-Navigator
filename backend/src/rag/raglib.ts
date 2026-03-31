@@ -99,7 +99,8 @@ function splitIntoChunks(doc: SourceDocument): Chunk[] {
         source: doc.source,
         content: chunkText,
         id:`${doc.id}::${chunkIndex}`, // ist eigentlich überholt
-        uuid: crypto.randomUUID(),
+        uuid:
+        
         docId: doc.id
         //chunkIndex,
       });
