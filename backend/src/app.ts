@@ -3,9 +3,9 @@ import cors from 'cors';
 import 'dotenv/config';
 
 
-import { config } from './config/env';
+import { config } from './config/env.js';
 
-import { answer } from './rag/raglib';
+import { answer } from './rag/raglib.js';
 
 const app = express();
 const PORT = 3000;

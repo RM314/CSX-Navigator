@@ -21,7 +21,7 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import OpenAI from "openai";
 
-import { config } from '../config/env';
+import { config } from '../config/env.js';
 
 import {
   type SourceDocument,
@@ -30,7 +30,7 @@ import {
   type SearchResult,
   type answerType,
   answerSchema,
-} from "./types";
+} from "../../../shared/raq/types.js";
 
 /*
 type SourceDocument = {
@@ -193,9 +193,20 @@ async function buildIndex() {
 
     const embeddings = await embedTexts(batch.map((chunk) => chunk.content));
 
+    if (embeddings.length !== batch.length) {
+    throw new Error(
+      `Embedding count mismatch: got ${embeddings.length}, expected ${batch.length}`,
+    );
+  }
+
     embeddings.forEach((embedding, index) => {
+
+    const chunk = batch[index];
+    if (!chunk) {
+      throw new Error(`Missing chunk at batch index ${index}`);
+    }
       indexedChunks.push({
-        ...batch[index],
+        ...chunk,
         embedding,
       });
     });
@@ -213,8 +224,11 @@ async function loadIndex(): Promise<IndexedChunk[]> {
 }
 
 function dot(a: number[], b: number[]): number {
+    if (a.length !== b.length) {
+    throw new Error("dot: vectors must have the same length");
+    }
   let sum = 0;
-  for (let i = 0; i < a.length; i += 1) sum += a[i] * b[i];
+  for (let i = 0; i < a.length; i += 1) sum += a[i]! * b[i]!;
   return sum;
 }
 
@@ -231,6 +245,10 @@ function cosineSimilarity(a: number[], b: number[]): number {
 async function search(query: string, topK = TOP_K): Promise<SearchResult[]> {
   const index = await loadIndex();
   const [queryEmbedding] = await embedTexts([query]);
+
+   if (!queryEmbedding) { // wg. ts-compiler hauptsächlich
+        throw new Error("Failed to create query embedding");
+    }
 
   return index
     .map((chunk) => ({
@@ -290,9 +308,9 @@ async function answer(question: string) {
     ],
   });
 
-  console.log("##################### start responst");
-  console.log(response);
-  console.log("##################### stop response");
+  //console.log("##################### start responst");
+  //console.log(response);
+  //console.log("##################### stop response");
 
 
   console.log("\n=== ANSWER ===\n");
@@ -320,21 +338,15 @@ async function answer(question: string) {
         })),
     };
 
+    /*
     console.log("AFFEXXX1")
     console.log(answerData);
     console.log("AFFEXXX2")
+    */
 
     const validatedResponse = answerSchema.parse(answerData);
 
-    console.log("\n=== ANSWER ===\n");
-    console.log(response.output_text);
 
-    console.log("\n=== SOURCES ===\n");
-    results.forEach((result, index) => {
-        console.log(
-        `[Source ${index + 1}] score=${result.score.toFixed(4)} title="${result.title}" chunk=${result.chunkIndex}`
-        );
-    });
 
     //console.log(validatedResponse);
     return validatedResponse;

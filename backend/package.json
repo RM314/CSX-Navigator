@@ -16,7 +16,8 @@
     "zod": "^4.3.6"
   },
   "scripts": {
-    "dev": "tsx watch --env-file=.env.local src/app.ts ",
+    "devold": "tsx watch --env-file=.env.local src/app.ts ",
+    "dev": "concurrently -k -n RUN,TYPE \"tsx watch --env-file=.env.local src/app.ts\" \"tsc --noEmit --watch\"",
     "prebuild": "rm -rf dist",
     "build": "tsc",
     "prestart": "npm run build",
@@ -26,6 +27,7 @@
     "@types/cors": "^2.8.19",
     "@types/express": "^5.0.6",
     "@types/node": "^25.5.0",
+    "concurrently": "^9.2.1",
     "tsx": "^4.21.0",
     "typescript": "^6.0.2"
   }

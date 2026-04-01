@@ -1,6 +1,6 @@
 //import { SOURCE_CHUNKS } from '../../data';
 
-import { type chunkType } from '../../rag/types';
+import { type chunkType } from '../../../../shared/raq/types'
 
 type ContextPanelProps = {
   selectedSource: string | null;

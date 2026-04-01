@@ -1,4 +1,4 @@
-import type { ChatMessage, DocumentItem, SourceChunk } from './types';
+import type { ChatMessage, DocumentItem} from './types';
 
 /*
 export const SOURCE_CHUNKS: Record<string, SourceChunk> = {
@@ -37,7 +37,28 @@ export const INITIAL_MESSAGES: ChatMessage[] = [
     content:
       'A simple example would be a neighborhood space that includes a community kitchen and garden. Before that space existed, people in the area mainly bought food individually and had few shared routines. Once the space became available, new local habits could emerge: people started cooking together, exchanging recipes, planning regular harvest days, and organizing meals around what was locally grown.',
     meta: 'Assistant',
-    sources: ['Community kitchen case study', 'Shared space and routine formation'],
+    //sources: ['Community kitchen case study', 'Shared space and routine formation'],
+    sources: [
+    {
+      id: "demo-1",
+      docId: "demo-doc-1",
+      title: "Community kitchen case study",
+      source: "demo",
+      content: "demo",
+      chunkIndex: 0,
+      uuid: "11111111-1111-4111-8111-111111111111",
+      score: 1,
+    },
+    {
+      id: "demo-2",
+      docId: "demo-doc-2",
+      title: "Shared space and routine formation",
+      source: "demo",
+      content: "demo",
+      chunkIndex: 1,
+      uuid: "22222222-2222-4222-8222-222222222222",
+      score: 1,
+    },],
   },
   {
     role: 'assistant',

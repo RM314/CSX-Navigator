@@ -6,7 +6,7 @@ import { ChatComposer } from './ChatComposer';
 import { ChatMessages } from './ChatMessages';
 import { ContextPanel } from './ContextPanel';
 
-import { type answerType, type chunkType} from '../../rag/types';
+import { type answerType, type chunkType} from '../../../../shared/raq/types'
 
 
 const baseUrl = import.meta.env.VITE_API_BASE_URL;
@@ -58,15 +58,16 @@ export function ChatPanel() {
     console.log(answer.sources);
     console.log("end answer.sources ääääääääääääääääää");
 
-    setMessages((prev) => {
+    setMessages((prev) : ChatMessage[] => {
       //console.log("vorherige messages:", prev);
 
-      const next = prev.map((message, index) =>
+      const next : ChatMessage[] = prev.map((message, index) =>
         index === assistantIndex
           ? {
               ...message,
               streaming: false,
-              sources: answer.sources.map((s, index) => `${index + 1} ${s.title}`),
+              //sources: answer.sources.map((s, index) => `${index + 1} ${s.title}`),
+              sources: answer.sources,
             }
           : message,
       );

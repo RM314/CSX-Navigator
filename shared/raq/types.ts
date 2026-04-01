@@ -65,7 +65,7 @@ export type SearchResult = IndexedChunk & {
   score: number;
 };
 
-type SourceDocument = {
+export type SourceDocument = {
   id: string;
   title: string;
   source: string;
