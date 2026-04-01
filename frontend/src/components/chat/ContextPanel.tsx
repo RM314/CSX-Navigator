@@ -11,7 +11,7 @@ export function ContextPanel({ selectedSource, chunksById}: ContextPanelProps) {
 
   const s = chunksById && selectedSource ? chunksById[selectedSource] : null;
 
-  console.log("ContextPanel s=",s," selectedSource=",selectedSource," chunksById=",chunksById);
+  //console.log("ContextPanel s=",s," selectedSource=",selectedSource," chunksById=",chunksById);
 
   return (
     <aside className="h-fit rounded-[20px] border border-[#d8e0ea] bg-white p-[18px] shadow-[0_16px_36px_rgba(31,41,55,0.08)]">

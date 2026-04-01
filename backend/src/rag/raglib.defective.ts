@@ -2,65 +2,33 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import OpenAI from "openai";
 
-/**
- * Minimal local RAG pipeline for LM Studio's OpenAI-compatible API.
- *
- * Requirements:
- * 1. Start LM Studio server (default: http://localhost:1234)
- * 2. Load a chat model in LM Studio
- * 3. Load an embedding model in LM Studio
- *
- * Example:
- *   export LLM_BASE_URL=http://localhost:1234/v1
- *   export LLM_API_KEY=lm-studio
- *   export CHAT_MODEL=qwen2.5-7b-instruct
- *   export EMBEDDING_MODEL=text-embedding-nomic-embed-text-v1.5
- *
- * Usage:
- *   npx tsx rag-pipeline-lmstudio.ts index
- *   npx tsx rag-pipeline-lmstudio.ts ask "What is Community-Supported X?"
- */
+import {
+  //KNOWLEDGE_DIR,
+  //INDEX_FILE,
+  //CHUNK_SIZE,
+  //CHUNK_OVERLAP,
+  //TOP_K,
+  type SourceDocument,
+  type Chunk,
+  type IndexedChunk,
+  type SearchResult,
+  type answerType,
+  answerSchema,
+} from "./types";
 
-type SourceDocument = {
-  id: string;
-  title: string;
-  source: string;
-  content: string;
-};
+import { config } from '../config/env';
 
-type Chunk = {
-  id: string;
-  docId: string;
-  title: string;
-  source: string;
-  text: string;
-  chunkIndex: number;
-  uuid: string;
-};
 
-type IndexedChunk = Chunk & {
-  embedding: number[];
-};
+export const KNOWLEDGE_DIR = path.resolve("knowledge");
+export const INDEX_FILE = path.resolve("data", "rag-index.json");
+export const CHUNK_SIZE = 900;
+export const CHUNK_OVERLAP = 150;
+export const TOP_K = 4;
 
-type SearchResult = IndexedChunk & {
-  score: number;
-};
-
-const BASE_URL = process.env.LLM_BASE_URL ?? "http://localhost:1234/v1";
-const API_KEY = process.env.LLM_API_KEY ?? "lm-studio";
-const CHAT_MODEL = process.env.CHAT_MODEL ?? "local-model";
-const EMBEDDING_MODEL = process.env.EMBEDDING_MODEL ?? "text-embedding-model";
-
-const client = new OpenAI({
-  baseURL: BASE_URL,
-  apiKey: API_KEY,
+export const client = new OpenAI({
+  baseURL: config.LLM_BASE_URL,
+  apiKey: config.LLM_API_KEY,
 });
-
-const KNOWLEDGE_DIR = path.resolve("knowledge");
-const INDEX_FILE = path.resolve("data", "rag-index.json");
-const CHUNK_SIZE = 900;
-const CHUNK_OVERLAP = 150;
-const TOP_K = 4;
 
 async function ensureDir(dirPath: string) {
   await fs.mkdir(dirPath, { recursive: true });
@@ -127,15 +95,16 @@ function splitIntoChunks(doc: SourceDocument): Chunk[] {
 
     if (chunkText.length > 0) {
       chunks.push({
-        id: `${doc.id}::${chunkIndex}`,
-        docId: doc.id,
         title: doc.title,
         source: doc.source,
-        text: chunkText,
-        chunkIndex,
-        uuid: crypto.randomUUID()
+        content: chunkText,
+        id:`${doc.id}::${chunkIndex}`, // ist eigentlich überholt
+        uuid:
+        
+        docId: doc.id
+        //chunkIndex,
       });
-      chunkIndex += 1;
+      chunkIndex += 1; // eigentlich brauchen wir den gar nicht mehr
     }
 
     if (end >= text.length) break;
@@ -147,7 +116,7 @@ function splitIntoChunks(doc: SourceDocument): Chunk[] {
 
 async function embedTexts(texts: string[]): Promise<number[][]> {
   const response = await client.embeddings.create({
-    model: EMBEDDING_MODEL,
+    model: config.EMBEDDING_MODEL,
     input: texts,
     encoding_format: "float",
   });
@@ -155,14 +124,14 @@ async function embedTexts(texts: string[]): Promise<number[][]> {
   return response.data.map((item) => item.embedding);
 }
 
-async function buildIndex() {
+export async function buildIndex() {
   await ensureDir(path.dirname(INDEX_FILE));
 
   const docs = await loadKnowledgeDocuments();
   const chunks = docs.flatMap(splitIntoChunks);
 
-  console.log(`Base URL: ${BASE_URL}`);
-  console.log(`Embedding model: ${EMBEDDING_MODEL}`);
+  console.log(`Base URL: ${config.LLM_BASE_URL}`);
+  console.log(`Embedding model: ${config.EMBEDDING_MODEL}`);
   console.log(`Loaded ${docs.length} documents`);
   console.log(`Created ${chunks.length} chunks`);
 
@@ -171,7 +140,8 @@ async function buildIndex() {
 
   for (let i = 0; i < chunks.length; i += batchSize) {
     const batch = chunks.slice(i, i + batchSize);
-    const embeddings = await embedTexts(batch.map((chunk) => chunk.text));
+    //console.log(batch.map((chunk) => chunk.content));
+    const embeddings = await embedTexts(batch.map((chunk) => chunk.content));
 
     embeddings.forEach((embedding, index) => {
       indexedChunks.push({
@@ -187,7 +157,7 @@ async function buildIndex() {
   console.log(`Saved index to ${INDEX_FILE}`);
 }
 
-async function loadIndex(): Promise<IndexedChunk[]> {
+export async function loadIndex(): Promise<IndexedChunk[]> {
   const raw = await fs.readFile(INDEX_FILE, "utf8");
   return JSON.parse(raw) as IndexedChunk[];
 }
@@ -208,7 +178,7 @@ function cosineSimilarity(a: number[], b: number[]): number {
   return dot(a, b) / denom;
 }
 
-async function search(query: string, topK = TOP_K): Promise<SearchResult[]> {
+export async function search(query: string, topK = TOP_K): Promise<SearchResult[]> {
   const index = await loadIndex();
   const [queryEmbedding] = await embedTexts([query]);
 
@@ -222,108 +192,97 @@ async function search(query: string, topK = TOP_K): Promise<SearchResult[]> {
 }
 
 function buildContext(results: SearchResult[]): string {
-  // nur das minimale
+   console.log("resultsstart #####################");
+   console.log(results);
+   console.log("resultsend #####################");
   return results
     .map(
       (result, i) =>
         [
           `SOURCE ${i + 1}`,
           `Title: ${result.title}`,
-          "Content:",
-          result.text,
+          `Path: ${result.source}`,
+          //`Chunk: ${result.chunkIndex}`,
+          `Id: ${result.id}`,
+          "Content:",result.content,
         ].join("\n")
     )
     .join("\n\n---\n\n");
-
-// Chunk: ${result.chunkIndex}`,
-//`UUID: ${result.uuid}`,
-//`Path: ${result.source}`,
-
 }
 
-async function answer(question: string) {
-  const results = await search(question, TOP_K);
-  //console.log("#####################");
-  //console.log(results);
-  //console.log("#####################");
+export async function answer(question: string) : answerType {
 
-  const context = buildContext(results);
+    console.log("starting question");
 
-  console.log("##################### start context");
-  console.log(context);
-  console.log("##################### stop context");
+    const results = await search(question, TOP_K);
+    //console.log("resultsstart #####################");
+    //console.log(results);
+    //console.log("resultsend #####################");
+    const context = buildContext(results);
 
-  const response = await client.responses.create({
-    model: CHAT_MODEL,
+    console.log("##################### start context");
+    console.log(context);
+    console.log("##################### stop context");
+
+    const response = await client.responses.create({
+    model: config.CHAT_MODEL,
     instructions:
-      "You are a CSX knowledge assistant. Answer only from the provided context. If the context is insufficient, say so clearly. Cite sources as [SOURCE 1], [SOURCE 2], [SOURCE 3] etc. Keep the answer focused and concrete.",
+        "You are a CSX knowledge assistant. Answer only from the provided context. If the context is insufficient, say so clearly. Cite sources as [Source 1], [Source 2], etc. Keep the answer focused and concrete.",
     input: [
-      {
+        {
         role: "user",
         content: [
-          {
+            {
             type: "input_text",
             text: `Question:\n${question}\n\nContext:\n${context}`,
-          },
+            },
         ],
-      },
+        },
     ],
-  });
+    });
 
-  console.log("##################### start responst");
-  console.log(response);
-  console.log("##################### stop response");
+    console.log("##################### start responst");
+    console.log(response);
+    console.log("##################### stop response");
 
+    const answerData = {
+        answer: response.output_text.trim(),
+        sources: results.map((result) => ({
+            score: Number(result.score.toFixed(4)),
+            //chunkIndex: Number(result.chunkIndex),
+            id: result.id,
+            docId: result.docId,
+            title: result.title,
+            content: result.content,
+            source: result.source,
+        })),
+    };
 
-  console.log("\n=== ANSWER ===\n");
-  console.log(response.output_text);
+    console.log("AFFEXXX1")
+    console.log(answerData);
+    console.log("AFFEXXX2")
 
-  console.log("\n=== SOURCES ===\n");
-  results.forEach((result, index) => {
-    console.log(
-      `[Source ${index + 1}] score=${result.score.toFixed(4)} title="${result.title}" chunk=${result.chunkIndex} chunkid=${result.uuid}`
-    );
-  });
+    const validatedResponse = answerSchema.parse(answerData);
+
+    console.log("\n=== ANSWER ===\n");
+    console.log(response.output_text);
+
+    console.log("\n=== SOURCES ===\n");
+    results.forEach((result, index) => {
+        console.log(
+        `[Source ${index + 1}] score=${result.score.toFixed(4)} title="${result.title}" chunk=${result.chunkIndex}`
+        );
+    });
+
+    //console.log(validatedResponse);
+    return validatedResponse;
+
 }
 
-async function listModels() {
+export async function listModels() {
   const models = await client.models.list();
   console.log("\n=== AVAILABLE MODELS ===\n");
   for (const model of models.data) {
     console.log(model.id);
   }
 }
-
-async function main() {
-  const [command, ...rest] = process.argv.slice(2);
-
-  switch (command) {
-    case "index":
-      await buildIndex();
-      break;
-
-    case "ask": {
-      const question = rest.join(" ").trim();
-      if (!question) {
-        throw new Error('Usage: npx tsx rag-pipeline-lmstudio.ts ask "Your question here"');
-      }
-      await answer(question);
-      break;
-    }
-
-    case "models":
-      await listModels();
-      break;
-
-    default:
-      console.log("Usage:");
-      console.log("  npx tsx rag-pipeline-lmstudio.ts models");
-      console.log("  npx tsx rag-pipeline-lmstudio.ts index");
-      console.log('  npx tsx rag-pipeline-lmstudio.ts ask "What is CSX?"');
-  }
-}
-
-main().catch((error) => {
-  console.error(error);
-  process.exit(1);
-});

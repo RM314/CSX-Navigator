@@ -1,13 +1,29 @@
+/**
+ * Minimal local RAG pipeline for LM Studio's OpenAI-compatible API.
+ *
+ * Requirements:
+ * 1. Start LM Studio server (default: http://localhost:1234)
+ * 2. Load a chat model in LM Studio
+ * 3. Load an embedding model in LM Studio
+ *
+ * Example:
+ *   export LLM_BASE_URL=http://localhost:1234/v1
+ *   export LLM_API_KEY=lm-studio
+ *   export CHAT_MODEL=qwen2.5-7b-instruct
+ *   export EMBEDDING_MODEL=text-embedding-nomic-embed-text-v1.5
+ *
+ * Usage:
+ *   npx tsx rag-pipeline-lmstudio.ts index
+ *   npx tsx rag-pipeline-lmstudio.ts ask "What is Community-Supported X?"
+ */
+
 import fs from "node:fs/promises";
 import path from "node:path";
 import OpenAI from "openai";
 
+import { config } from '../config/env';
+
 import {
-  //KNOWLEDGE_DIR,
-  //INDEX_FILE,
-  //CHUNK_SIZE,
-  //CHUNK_OVERLAP,
-  //TOP_K,
   type SourceDocument,
   type Chunk,
   type IndexedChunk,
@@ -16,19 +32,51 @@ import {
   answerSchema,
 } from "./types";
 
-import { config } from '../config/env';
+/*
+type SourceDocument = {
+  id: string;
+  title: string;
+  source: string;
+  content: string;
+};
+
+type Chunk = {
+  id: string;
+  docId: string;
+  title: string;
+  source: string;
+  content: string;
+  chunkIndex: number;
+  uuid: string;
+};
+
+type IndexedChunk = Chunk & {
+  embedding: number[];
+};
+
+type SearchResult = IndexedChunk & {
+  score: number;
+};
+*/
 
 
-export const KNOWLEDGE_DIR = path.resolve("knowledge");
-export const INDEX_FILE = path.resolve("data", "rag-index.json");
-export const CHUNK_SIZE = 900;
-export const CHUNK_OVERLAP = 150;
-export const TOP_K = 4;
+/*
+const BASE_URL = process.env.LLM_BASE_URL ?? "http://localhost:1234/v1";
+const API_KEY = process.env.LLM_API_KEY ?? "lm-studio";
+const CHAT_MODEL = process.env.CHAT_MODEL ?? "local-model";
+const EMBEDDING_MODEL = process.env.EMBEDDING_MODEL ?? "text-embedding-model";
+*/
 
-export const client = new OpenAI({
+const client = new OpenAI({
   baseURL: config.LLM_BASE_URL,
   apiKey: config.LLM_API_KEY,
 });
+
+const KNOWLEDGE_DIR = path.resolve("knowledge");
+const INDEX_FILE = path.resolve("data", "rag-index.json");
+const CHUNK_SIZE = 900;
+const CHUNK_OVERLAP = 150;
+const TOP_K = 4;
 
 async function ensureDir(dirPath: string) {
   await fs.mkdir(dirPath, { recursive: true });
@@ -95,16 +143,15 @@ function splitIntoChunks(doc: SourceDocument): Chunk[] {
 
     if (chunkText.length > 0) {
       chunks.push({
+        id: `${doc.id}::${chunkIndex}`,
+        docId: doc.id,
         title: doc.title,
         source: doc.source,
         content: chunkText,
-        id:`${doc.id}::${chunkIndex}`, // ist eigentlich überholt
-        uuid:
-        
-        docId: doc.id
-        //chunkIndex,
+        chunkIndex,
+        uuid: crypto.randomUUID()
       });
-      chunkIndex += 1; // eigentlich brauchen wir den gar nicht mehr
+      chunkIndex += 1;
     }
 
     if (end >= text.length) break;
@@ -115,6 +162,7 @@ function splitIntoChunks(doc: SourceDocument): Chunk[] {
 }
 
 async function embedTexts(texts: string[]): Promise<number[][]> {
+    //console.log(texts);
   const response = await client.embeddings.create({
     model: config.EMBEDDING_MODEL,
     input: texts,
@@ -124,7 +172,7 @@ async function embedTexts(texts: string[]): Promise<number[][]> {
   return response.data.map((item) => item.embedding);
 }
 
-export async function buildIndex() {
+async function buildIndex() {
   await ensureDir(path.dirname(INDEX_FILE));
 
   const docs = await loadKnowledgeDocuments();
@@ -140,7 +188,9 @@ export async function buildIndex() {
 
   for (let i = 0; i < chunks.length; i += batchSize) {
     const batch = chunks.slice(i, i + batchSize);
-    //console.log(batch.map((chunk) => chunk.content));
+
+    //console.log(batch);
+
     const embeddings = await embedTexts(batch.map((chunk) => chunk.content));
 
     embeddings.forEach((embedding, index) => {
@@ -157,7 +207,7 @@ export async function buildIndex() {
   console.log(`Saved index to ${INDEX_FILE}`);
 }
 
-export async function loadIndex(): Promise<IndexedChunk[]> {
+async function loadIndex(): Promise<IndexedChunk[]> {
   const raw = await fs.readFile(INDEX_FILE, "utf8");
   return JSON.parse(raw) as IndexedChunk[];
 }
@@ -178,7 +228,7 @@ function cosineSimilarity(a: number[], b: number[]): number {
   return dot(a, b) / denom;
 }
 
-export async function search(query: string, topK = TOP_K): Promise<SearchResult[]> {
+async function search(query: string, topK = TOP_K): Promise<SearchResult[]> {
   const index = await loadIndex();
   const [queryEmbedding] = await embedTexts([query]);
 
@@ -192,69 +242,81 @@ export async function search(query: string, topK = TOP_K): Promise<SearchResult[
 }
 
 function buildContext(results: SearchResult[]): string {
-   console.log("resultsstart #####################");
-   console.log(results);
-   console.log("resultsend #####################");
+  // nur das minimale
   return results
     .map(
       (result, i) =>
         [
           `SOURCE ${i + 1}`,
           `Title: ${result.title}`,
-          `Path: ${result.source}`,
-          //`Chunk: ${result.chunkIndex}`,
-          `Id: ${result.id}`,
-          "Content:",result.content,
+          "Content:",
+          result.content,
         ].join("\n")
     )
     .join("\n\n---\n\n");
+
+// Chunk: ${result.chunkIndex}`,
+//`UUID: ${result.uuid}`,
+//`Path: ${result.source}`,
+
 }
 
-export async function answer(question: string) : answerType {
+async function answer(question: string) {
+  const results = await search(question, TOP_K);
+  //console.log("#####################");
+  //console.log(results);
+  //console.log("#####################");
 
-    console.log("starting question");
+  const context = buildContext(results);
 
-    const results = await search(question, TOP_K);
-    //console.log("resultsstart #####################");
-    //console.log(results);
-    //console.log("resultsend #####################");
-    const context = buildContext(results);
+  console.log("##################### start context");
+  console.log(context);
+  console.log("##################### stop context");
 
-    console.log("##################### start context");
-    console.log(context);
-    console.log("##################### stop context");
-
-    const response = await client.responses.create({
+  const response = await client.responses.create({
     model: config.CHAT_MODEL,
     instructions:
-        "You are a CSX knowledge assistant. Answer only from the provided context. If the context is insufficient, say so clearly. Cite sources as [Source 1], [Source 2], etc. Keep the answer focused and concrete.",
+      "You are a CSX knowledge assistant. Answer only from the provided context. If the context is insufficient, say so clearly. Cite sources as [SOURCE_01], [SOURCE_02], [SOURCE_03] etc. Keep the answer focused and concrete.",
     input: [
-        {
+      {
         role: "user",
         content: [
-            {
+          {
             type: "input_text",
             text: `Question:\n${question}\n\nContext:\n${context}`,
-            },
+          },
         ],
-        },
+      },
     ],
-    });
+  });
 
-    console.log("##################### start responst");
-    console.log(response);
-    console.log("##################### stop response");
+  console.log("##################### start responst");
+  console.log(response);
+  console.log("##################### stop response");
+
+
+  console.log("\n=== ANSWER ===\n");
+  console.log(response.output_text);
+
+  console.log("\n=== SOURCES ===\n");
+  results.forEach((result, index) => {
+    console.log(
+      `[Source ${index + 1}] score=${result.score.toFixed(4)} title="${result.title}" chunk=${result.chunkIndex} chunkid=${result.uuid}`
+    );
+  });
+
 
     const answerData = {
         answer: response.output_text.trim(),
         sources: results.map((result) => ({
-            score: Number(result.score.toFixed(4)),
-            //chunkIndex: Number(result.chunkIndex),
             id: result.id,
             docId: result.docId,
             title: result.title,
-            content: result.content,
             source: result.source,
+            content: result.content,
+            chunkIndex: Number(result.chunkIndex),
+            uuid: result.uuid,
+            score: Number(result.score.toFixed(4))
         })),
     };
 
@@ -277,12 +339,16 @@ export async function answer(question: string) : answerType {
     //console.log(validatedResponse);
     return validatedResponse;
 
+
 }
 
-export async function listModels() {
+async function listModels() {
   const models = await client.models.list();
   console.log("\n=== AVAILABLE MODELS ===\n");
   for (const model of models.data) {
     console.log(model.id);
   }
 }
+
+ export { buildIndex, answer, listModels };
+

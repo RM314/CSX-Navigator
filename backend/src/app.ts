@@ -5,7 +5,7 @@ import 'dotenv/config';
 
 import { config } from './config/env';
 
-import { answer } from './rag/rag';
+import { answer } from './rag/raglib';
 
 const app = express();
 const PORT = 3000;

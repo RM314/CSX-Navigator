@@ -54,9 +54,27 @@ export function ChatPanel() {
       );
     }
 
+    console.log("start answer,sources ääääääääääääääääää");
+    console.log(answer.sources);
+    console.log("end answer.sources ääääääääääääääääää");
 
-    //console.log(answer.sources);
+    setMessages((prev) => {
+      //console.log("vorherige messages:", prev);
 
+      const next = prev.map((message, index) =>
+        index === assistantIndex
+          ? {
+              ...message,
+              streaming: false,
+              sources: answer.sources.map((s, index) => `${index + 1} ${s.title}`),
+            }
+          : message,
+      );
+      console.log("neue messages:", next);
+      return next;
+    });
+
+    /*
     setMessages((prev) =>
       prev.map((message, index) =>
         index === assistantIndex
@@ -69,7 +87,9 @@ export function ChatPanel() {
           : message,
       ),
     );
+    */
   };
+
 
 /*
 return items.map((item, index) => ({

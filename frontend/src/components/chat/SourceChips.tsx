@@ -3,21 +3,22 @@ import { type chunkType} from '../../rag/types';
 
 
 type SourceChipsProps = {
-  chunksById: Map<number, chunkType>;
-  selectedSource: number | null;
-  onSelectSource: (source: number) => void;
+  //chunksById: Map<number, chunkType>;
+  sources: string[];
+  selectedSource: string | null;
+  onSelectSource: (source: string) => void;
 };
 
 export function SourceChips({
-  chunksById,
+  sources,
   selectedSource,
   onSelectSource,
 }: SourceChipsProps) {
   return (
     <div className="mt-2.5 flex flex-wrap gap-2">
 
-      {chunksById.map((chunk) => {
-        const active = selectedSource === chunk.chunkIndex;
+      {sources.map((source) => {
+        const active = selectedSource === source;
 
         return (
           <button

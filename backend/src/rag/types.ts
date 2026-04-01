@@ -1,12 +1,13 @@
 import { z } from 'zod';
 
-
+/*
 export type SourceDocument = {
   id: string;
   title: string;
   source: string;
   content: string;
 };
+*/
 
 /*
 export type UUID = string & { __brand: "uuid" };
@@ -20,16 +21,27 @@ export type Chunk = {
 };
 */
 
+/*
+type Chunk = {
+  id: string;
+  docId: string;
+  title: string;
+  source: string;
+  content: string;
+  chunkIndex: number;
+  uuid: string;
+};
+*/
 
 export const chunkSchema = z.object({
-  score: z.number().min(0).max(1).optional(),
-  //chunkIndex: z.number().int().nonnegative(),
+  id: z.string(), // reis2025::84 ; geht auch und ist wohl LLM-freundlicher als so eine lange UUID
+  docId: z.string(), // ist halt aktuell praktisch nochmal der Bibkey
   title: z.string(), // kommt aus dem Dateinamen
   source: z.string(), // full path
-  content: z.string(),
-  id: z.string(), // reis2025::84 ; geht auch und ist wohl LLM-freundlicher als so eine lange UUID
+  content: z.string(), // full path
+  chunkIndex: z.number().int().nonnegative(),
   uuid: z.uuid(),
-  docId: z.string() // ist halt aktuell praktisch nochmal der Bibkey
+  score: z.number().min(0).max(1).optional()
 });
 
 export const answerSchema = z.object({
@@ -40,7 +52,10 @@ export const answerSchema = z.object({
 export type chunkType = z.infer<typeof chunkSchema>;
 export type answerType = z.infer<typeof answerSchema>;
 
-export type Chunk=chunkType;
+
+
+// inner types
+export type Chunk = chunkType;
 
 export type IndexedChunk = Chunk & {
   embedding: number[];
@@ -49,3 +64,11 @@ export type IndexedChunk = Chunk & {
 export type SearchResult = IndexedChunk & {
   score: number;
 };
+
+type SourceDocument = {
+  id: string;
+  title: string;
+  source: string;
+  content: string;
+};
+
