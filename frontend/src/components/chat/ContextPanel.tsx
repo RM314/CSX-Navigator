@@ -7,11 +7,17 @@ type ContextPanelProps = {
   chunksById: Record<string, chunkType>;
 };
 
-export function ContextPanel({ selectedSource, chunksById}: ContextPanelProps) {
+export function ContextPanel({ selectedSource , chunksById}: ContextPanelProps) {
 
   const s = chunksById && selectedSource ? chunksById[selectedSource] : null;
 
-  //console.log("ContextPanel s=",s," selectedSource=",selectedSource," chunksById=",chunksById);
+  console.log("JJJ");
+  console.log(chunksById);
+  console.log(Object.keys(chunksById));
+
+  console.log("UFFUFF ContextPanel s=",s," selectedSource=",selectedSource," chunksById=",chunksById);
+  console.log("ALF ",chunksById[selectedSource!]);
+
 
   return (
     <aside className="h-fit rounded-[20px] border border-[#d8e0ea] bg-white p-[18px] shadow-[0_16px_36px_rgba(31,41,55,0.08)]">

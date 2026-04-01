@@ -19,7 +19,7 @@ export function ChatPanel() {
   const [inputValue, setInputValue] = useState('');
   const [isSending, setIsSending] = useState(false);
 
-  const [chunksById, setchunksById] = useState<Record<number, chunkType>>({});
+  const [chunksById, setchunksById] = useState<Record<string, chunkType>>({});
 
   //const [sourcesValue, setSourcesValue] = useState<sourceType[]>([]);
 
@@ -131,7 +131,7 @@ return items.map((item, index) => ({
 
     setchunksById((prev) => ({
       ...prev,
-      ...Object.fromEntries(data.sources.map((src: chunkType) => [src.chunkIndex, src])),
+      ...Object.fromEntries(data.sources.map((src: chunkType) => [src.uuid, src])),
     }));
 
     console.log("Halleluja1");
