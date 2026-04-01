@@ -11,8 +11,11 @@ export function ContextPanel({ selectedSource , chunksById}: ContextPanelProps) 
 
   const s = chunksById && selectedSource ? chunksById[selectedSource] : null;
   console.log("UUU",s?.id);
+
+  // {*/<aside className="h-fit rounded-[20px] border border-[#d8e0ea] bg-white p-[18px] shadow-[0_16px_36px_rgba(31,41,55,0.08)]">*/}
+
   return (
-    <aside className="h-fit rounded-[20px] border border-[#d8e0ea] bg-white p-[18px] shadow-[0_16px_36px_rgba(31,41,55,0.08)]">
+    <aside className="h-full overflow-y-auto rounded-[20px] border border-[#d8e0ea] bg-white p-[18px] shadow-[0_16px_36px_rgba(31,41,55,0.08)]">
       <h3 className="mb-3 text-base font-semibold text-[#1f2937]">Context</h3>
 
       <ul className="list-disc space-y-1 pl-[18px] leading-6 text-[#6b7280]">

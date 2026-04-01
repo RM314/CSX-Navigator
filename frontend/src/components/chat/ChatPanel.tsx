@@ -157,38 +157,38 @@ return items.map((item, index) => ({
   };
 
   return (
-    <section className="grid grid-cols-[220px_1fr] gap-5 max-[900px]:grid-cols-1">
-      <ContextPanel selectedSource={selectedSource} chunksById={chunksById} />
+  <section className="grid h-[calc(100vh-140px)] grid-cols-[fit-content(320px)_1fr] gap-5">
+    <ContextPanel selectedSource={selectedSource} chunksById={chunksById} />
 
-      <section className="grid min-h-[calc(100vh-140px)] grid-rows-[auto_1fr_auto] overflow-hidden rounded-[24px] border border-[#d8e0ea] bg-white shadow-[0_16px_36px_rgba(31,41,55,0.08)]">
-        <header className="flex items-center justify-between gap-4 border-b border-[#d8e0ea] px-[22px] py-5">
-          <div>
-            <h2 className="m-0 text-[1.2rem] font-semibold text-[#1f2937]">
-              Chat
-            </h2>
-            <p className="mt-1 text-[0.92rem] text-[#6b7280]">
-              Knowledge-guided answers with follow-up questions and source hints.
-            </p>
-          </div>
+    <section className="grid h-full min-h-0 grid-rows-[auto_1fr_auto] overflow-hidden rounded-[24px] border border-[#d8e0ea] bg-white shadow-[0_16px_36px_rgba(31,41,55,0.08)]">
+      <header className="flex items-center justify-between gap-4 border-b border-[#d8e0ea] px-[22px] py-5">
+        <div>
+          <h2 className="m-0 text-[1.2rem] font-semibold text-[#1f2937]">
+            Chat
+          </h2>
+          <p className="mt-1 text-[0.92rem] text-[#6b7280]">
+            Knowledge-guided answers with follow-up questions and source hints.
+          </p>
+        </div>
 
-          <div className="rounded-full bg-[#eef3f8] px-3 py-2 text-[0.85rem] font-semibold text-[#6b7280]">
-            Streaming enabled
-          </div>
-        </header>
+        <div className="rounded-full bg-[#eef3f8] px-3 py-2 text-[0.85rem] font-semibold text-[#6b7280]">
+          Streaming enabled
+        </div>
+      </header>
 
-        <ChatMessages
-          messages={messages}
-          selectedSource={selectedSource}
-          onSelectSource={setSelectedSource}
-        />
+      <ChatMessages
+        messages={messages}
+        selectedSource={selectedSource}
+        onSelectSource={setSelectedSource}
+      />
 
-        <ChatComposer
-          value={inputValue}
-          onChange={setInputValue}
-          onSend={handleSend}
-          disabled={isSending}
-        />
-      </section>
+      <ChatComposer
+        value={inputValue}
+        onChange={setInputValue}
+        onSend={handleSend}
+        disabled={isSending}
+      />
     </section>
-  );
+  </section>
+);
 }

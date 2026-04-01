@@ -20,19 +20,19 @@ export function ChatMessages({
     if (el) el.scrollTop = el.scrollHeight;
   }, [messages]);
 
+ {/*className="flex flex-col gap-[14px] overflow-y-auto bg-[#fbfcfe] p-[22px]  "*/}
   return (
-    <div
-      ref={containerRef}
-      className="flex flex-col gap-[14px] overflow-y-auto bg-[#fbfcfe] p-[22px]  "
-    >
-      {messages.map((message, index) => (
-        <MessageBubble
-          key={`${message.meta}-${index}`}
-          message={message}
-          selectedSource={selectedSource}
-          onSelectSource={onSelectSource}
-        />
-      ))}
+    <div ref={containerRef} className="min-h-0 overflow-y-auto bg-[#fbfcfe] p-[22px]" >
+      <div className="flex flex-col gap-[14px]">
+        {messages.map((message, index) => (
+          <MessageBubble
+            key={`${message.meta}-${index}`}
+            message={message}
+            selectedSource={selectedSource}
+            onSelectSource={onSelectSource}
+          />
+        ))}
+      </div>
     </div>
   );
 }
