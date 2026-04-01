@@ -23,7 +23,7 @@ export function ChatMessages({
   return (
     <div
       ref={containerRef}
-      className="flex flex-col gap-[14px] overflow-y-auto bg-[#fbfcfe] p-[22px]  border-2 border-red-500  "
+      className="flex flex-col gap-[14px] overflow-y-auto bg-[#fbfcfe] p-[22px]  "
     >
       {messages.map((message, index) => (
         <MessageBubble

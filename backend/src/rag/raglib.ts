@@ -265,7 +265,8 @@ function buildContext(results: SearchResult[]): string {
     .map(
       (result, i) =>
         [
-          `SOURCE ${i + 1}`,
+          //`SOURCE ${i + 1}`,
+          `SOURCE ${result.id}`,
           `Title: ${result.title}`,
           "Content:",
           result.content,
@@ -287,14 +288,10 @@ async function answer(question: string) {
 
   const context = buildContext(results);
 
-  console.log("##################### start context");
-  console.log(context);
-  console.log("##################### stop context");
-
   const response = await client.responses.create({
     model: config.CHAT_MODEL,
     instructions:
-      "You are a CSX knowledge assistant. Answer only from the provided context. If the context is insufficient, say so clearly. Cite sources as [SOURCE_01], [SOURCE_02], [SOURCE_03] etc. Keep the answer focused and concrete.",
+      "You are a CSX knowledge assistant. Answer only from the provided context. If the context is insufficient, say so clearly. Cite sources as [SOURCE_1], [SOURCE_2], [SOURCE_3] etc.. Keep the answer focused and concrete.",
     input: [
       {
         role: "user",
@@ -307,11 +304,6 @@ async function answer(question: string) {
       },
     ],
   });
-
-  //console.log("##################### start responst");
-  //console.log(response);
-  //console.log("##################### stop response");
-
 
   console.log("\n=== ANSWER ===\n");
   console.log(response.output_text);

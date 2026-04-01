@@ -19,7 +19,7 @@ export function SourceChips({
   return (
     <div className="mt-2.5 flex flex-wrap gap-2">
 
-      {sources.map((source) => {
+      {sources.map((source, index) => {
         const active = selectedSource === source.uuid;
 
         return (
@@ -33,7 +33,7 @@ export function SourceChips({
                 : 'cursor-pointer rounded-full border border-[#d8e0ea] bg-white px-[9px] py-[5px] text-[0.8rem] text-[#6b7280] hover:border-[#2f6fed] hover:text-[#2f6fed]'
             }
           >
-            {source.id}
+            [{index}] {source.id}
           </button>
         );
       })}
