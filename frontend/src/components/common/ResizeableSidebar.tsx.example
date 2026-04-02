@@ -1,0 +1,105 @@
+// noch zu prüfen !!
+
+import { useState, useRef, useEffect } from "react";
+
+type ResizableSidebarProps = {
+  left: React.ReactNode;
+  right: React.ReactNode;
+  initialWidth?: number;
+  minWidth?: number;
+  maxWidth?: number;
+};
+
+export function ResizableSidebar({
+  left,
+  right,
+  initialWidth = 280,
+  minWidth = 200,
+  maxWidth = 500,
+}: ResizableSidebarProps) {
+  const [width, setWidth] = useState(() => {
+    const saved = localStorage.getItem("sidebarWidth");
+    return saved ? Number(saved) : initialWidth;
+  });
+
+  const draggingRef = useRef(false);
+
+  useEffect(() => {
+    localStorage.setItem("sidebarWidth", String(width));
+  }, [width]);
+
+  useEffect(() => {
+    const onMove = (e: MouseEvent) => {
+      if (!draggingRef.current) return;
+
+      setWidth((prev) => {
+        const next = Math.min(maxWidth, Math.max(minWidth, e.clientX));
+        return next;
+      });
+    };
+
+    const onUp = () => {
+      draggingRef.current = false;
+    };
+
+    window.addEventListener("mousemove", onMove);
+    window.addEventListener("mouseup", onUp);
+
+    return () => {
+      window.removeEventListener("mousemove", onMove);
+      window.removeEventListener("mouseup", onUp);
+    };
+  }, [minWidth, maxWidth]);
+
+  return (
+    <section
+      className="grid h-[calc(100vh-140px)]"
+      style={{ gridTemplateColumns: `${width}px 6px 1fr` }}
+    >
+      <div className="overflow-hidden">{left}</div>
+
+      <div
+        className="cursor-col-resize bg-gray-300 hover:bg-blue-400"
+        onMouseDown={() => {
+          draggingRef.current = true;
+        }}
+      />
+
+      <div className="min-w-0">{right}</div>
+    </section>
+  );
+
+
+// example
+
+
+return (
+  <ResizableSidebar
+    left={
+      <ContextPanel
+        selectedSource={selectedSource}
+        chunksById={chunksById}
+      />
+    }
+    right={
+      <section className="grid h-full min-h-0 grid-rows-[auto_1fr_auto] overflow-hidden rounded-[24px] border border-[#d8e0ea] bg-white shadow-[0_16px_36px_rgba(31,41,55,0.08)]">
+        <header>...</header>
+
+        <ChatMessages
+          messages={messages}
+          selectedSource={selectedSource}
+          onSelectSource={setSelectedSource}
+        />
+
+        <ChatComposer
+          value={inputValue}
+          onChange={setInputValue}
+          onSend={handleSend}
+          disabled={isSending}
+        />
+      </section>
+    }
+  />
+);
+
+}

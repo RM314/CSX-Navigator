@@ -23,6 +23,12 @@ import OpenAI from "openai";
 
 import { config } from '../config/env.js';
 
+const KNOWLEDGE_DIR = path.resolve("knowledge");
+const INDEX_FILE = path.resolve("data", "rag-index.json");
+const CHUNK_SIZE = 500; // 900
+const CHUNK_OVERLAP = 100; // 150
+const TOP_K = 4;
+
 import {
   type SourceDocument,
   type Chunk,
@@ -32,51 +38,10 @@ import {
   answerSchema,
 } from "../../../shared/raq/types.js";
 
-/*
-type SourceDocument = {
-  id: string;
-  title: string;
-  source: string;
-  content: string;
-};
-
-type Chunk = {
-  id: string;
-  docId: string;
-  title: string;
-  source: string;
-  content: string;
-  chunkIndex: number;
-  uuid: string;
-};
-
-type IndexedChunk = Chunk & {
-  embedding: number[];
-};
-
-type SearchResult = IndexedChunk & {
-  score: number;
-};
-*/
-
-
-/*
-const BASE_URL = process.env.LLM_BASE_URL ?? "http://localhost:1234/v1";
-const API_KEY = process.env.LLM_API_KEY ?? "lm-studio";
-const CHAT_MODEL = process.env.CHAT_MODEL ?? "local-model";
-const EMBEDDING_MODEL = process.env.EMBEDDING_MODEL ?? "text-embedding-model";
-*/
-
 const client = new OpenAI({
   baseURL: config.LLM_BASE_URL,
   apiKey: config.LLM_API_KEY,
 });
-
-const KNOWLEDGE_DIR = path.resolve("knowledge");
-const INDEX_FILE = path.resolve("data", "rag-index.json");
-const CHUNK_SIZE = 900;
-const CHUNK_OVERLAP = 150;
-const TOP_K = 4;
 
 async function ensureDir(dirPath: string) {
   await fs.mkdir(dirPath, { recursive: true });
@@ -168,6 +133,11 @@ async function embedTexts(texts: string[]): Promise<number[][]> {
     input: texts,
     encoding_format: "float",
   });
+
+  //console.log(response.data);
+  //console.dir(response.data, { depth: null });
+
+  console.log("embedding dimension: ",response.data[0]?.embedding.length);
 
   return response.data.map((item) => item.embedding);
 }
