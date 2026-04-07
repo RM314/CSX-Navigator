@@ -17,7 +17,7 @@ export function ChatPanel() {
     'Community kitchen case study',
   );
   const [inputValue, setInputValue] = useState('');
-  //const [isSending, setIsSending] = useState(false);
+  const [isSending, setIsSending] = useState(false);
 
   const [chunksById, setChunksById] = useState<Record<string, chunkType>>({});
 
@@ -73,6 +73,17 @@ async function readChatStream(
 
 const sendMessage = async (text: string) => {
   const assistantId = crypto.randomUUID();
+  const userSId = crypto.randomUUID();
+
+   setMessages((prev) => [
+      ...prev,
+      {
+        id: userSId,
+        role: 'user',
+        content: text,
+        meta: 'You',
+      },
+    ]);
 
   setMessages((prev) => [
     ...prev,
@@ -109,7 +120,6 @@ const sendMessage = async (text: string) => {
         );
       },
       ({ answer, sources }) => {
-
         setChunksById((prev) => ({
           ...prev,
           ...Object.fromEntries(sources.map((src) => [src.uuid, src])),
@@ -144,18 +154,18 @@ const sendMessage = async (text: string) => {
     );
 
     throw error;
+  } finally {
+    setIsSending(false);
   }
-
-
-
 };
 
 
 const handleSend = async () => {
   const text = inputValue.trim();
-  if (!text /*|| isSending*/) return;
+  if (!text || isSending) return;
 
   setInputValue("");
+  setIsSending(true);
   await sendMessage(text);
 
 
@@ -252,7 +262,7 @@ const handleSend = async () => {
         value={inputValue}
         onChange={setInputValue}
         onSend={handleSend}
-        disabled={false}
+        disabled={isSending}
       />
     </section>
   </section>
