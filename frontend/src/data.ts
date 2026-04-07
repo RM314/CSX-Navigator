@@ -26,11 +26,13 @@ export const INITIAL_MESSAGES: ChatMessage[] = [
     role: 'system',
     content: 'CSX Assistant is ready. Answers should be grounded in the available document context.',
     meta: 'System message',
+    id: "xxx"
   },
   {
     role: 'user',
     content: 'Give an example how space facilitates changes in local habits.',
     meta: 'You',
+    id: "xxx"
   },
   {
     role: 'assistant',
@@ -47,7 +49,7 @@ export const INITIAL_MESSAGES: ChatMessage[] = [
       content: "demo",
       chunkIndex: 0,
       uuid: "11111111-1111-4111-8111-111111111111",
-      score: 1,
+      score: 1
     },
     {
       id: "demo-2",
@@ -57,13 +59,15 @@ export const INITIAL_MESSAGES: ChatMessage[] = [
       content: "demo",
       chunkIndex: 1,
       uuid: "22222222-2222-4222-8222-222222222222",
-      score: 1,
+      score: 1
     },],
+    id: "xxx"
   },
   {
     role: 'assistant',
     content: 'Would you like an example from agriculture, culture, or an urban neighborhood project?',
     meta: 'Assistant follow-up',
+    id: "xyt"
   },
 ];
 

@@ -21,7 +21,11 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import OpenAI from "openai";
 
+import type { Response } from "express";
+
 import { config } from '../config/env.js';
+
+
 
 const KNOWLEDGE_DIR = path.resolve("knowledge");
 const INDEX_FILE = path.resolve("data", "rag-index.json");
@@ -250,6 +254,107 @@ function buildContext(results: SearchResult[]): string {
 
 }
 
+async function debugStream(question: string) {
+  const results = await search(question, TOP_K);
+  const context = buildContext(results);
+
+  const stream = await client.responses.create({
+    model: config.CHAT_MODEL,
+    stream: true,
+    instructions:
+      "You are a CSX knowledge assistant. Answer only from the provided context. If the context is insufficient, say so clearly. Cite sources as [SOURCE_1], [SOURCE_2], [SOURCE_3] etc.. Keep the answer focused and concrete.",
+    input: [
+      {
+        role: "user",
+        content: [
+          {
+            type: "input_text",
+            text: `Question:\n${question}\n\nContext:\n${context}`,
+          },
+        ],
+      },
+    ],
+  });
+
+  console.log("=== STREAM START ===");
+
+  for await (const event of stream) {
+    console.dir(event, { depth: null });
+  }
+
+  console.log("=== STREAM END ===");
+}
+
+async function streamAnswer(question: string, res: Response) {
+  const results = await search(question, TOP_K);
+  const context = buildContext(results);
+
+  const stream = await client.responses.create({
+    model: config.CHAT_MODEL,
+    stream: true,
+    instructions:
+      "You are a CSX knowledge assistant. Answer only from the provided context. If the context is insufficient, say so clearly. Cite sources as [SOURCE_1], [SOURCE_2], [SOURCE_3] etc.. Keep the answer focused and concrete.",
+    input: [
+      {
+        role: "user",
+        content: [
+          {
+            type: "input_text",
+            text: `Question:\n${question}\n\nContext:\n${context}`,
+          },
+        ],
+      },
+    ],
+  });
+
+  let fullText = "";
+
+  for await (const event of stream) {
+    if (event.type === "response.output_text.delta") {
+      const delta = event.delta ?? "";
+      fullText += delta;
+
+      res.write(
+        JSON.stringify({
+          type: "delta",
+          delta,
+        }) + "\n"
+      );
+    }
+
+    if (event.type === "response.output_text.done") {
+      fullText = event.text;
+    }
+  }
+
+  const answerData = {
+    answer: fullText.trim(),
+    sources: results.map((result) => ({
+      id: result.id,
+      docId: result.docId,
+      title: result.title,
+      source: result.source,
+      content: result.content,
+      chunkIndex: Number(result.chunkIndex),
+      uuid: result.uuid,
+      score: Number(result.score.toFixed(4)),
+    })),
+  };
+
+  const validatedResponse = answerSchema.parse(answerData);
+
+  res.write(
+    JSON.stringify({
+      type: "done",
+      answer: validatedResponse.answer,
+      sources: validatedResponse.sources,
+    }) + "\n"
+  );
+
+  res.end();
+}
+
+
 async function answer(question: string) {
   const results = await search(question, TOP_K);
   //console.log("#####################");
@@ -324,5 +429,5 @@ async function listModels() {
   }
 }
 
- export { buildIndex, answer, listModels };
+ export { buildIndex, answer, listModels, debugStream, streamAnswer };
 

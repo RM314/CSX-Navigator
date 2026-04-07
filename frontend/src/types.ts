@@ -12,6 +12,7 @@ export type SourceChunk = {
 
 
 export type ChatMessage = {
+  id: string;
   role: MessageRole;
   content: string;
   meta: string;

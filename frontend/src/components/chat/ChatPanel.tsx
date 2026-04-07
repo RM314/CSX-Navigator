@@ -1,12 +1,12 @@
 import { useState } from 'react';
 import { INITIAL_MESSAGES } from '../../data';
 import type { ChatMessage } from '../../types';
-import { wait } from '../../utils';
+//import { wait } from '../../utils';
 import { ChatComposer } from './ChatComposer';
 import { ChatMessages } from './ChatMessages';
 import { ContextPanel } from './ContextPanel';
 
-import { type answerType, type chunkType} from '../../../../shared/raq/types'
+import { type chunkType} from '../../../../shared/raq/types'
 
 
 const baseUrl = import.meta.env.VITE_API_BASE_URL;
@@ -17,88 +17,153 @@ export function ChatPanel() {
     'Community kitchen case study',
   );
   const [inputValue, setInputValue] = useState('');
-  const [isSending, setIsSending] = useState(false);
+  //const [isSending, setIsSending] = useState(false);
 
-  const [chunksById, setchunksById] = useState<Record<string, chunkType>>({});
+  const [chunksById, setChunksById] = useState<Record<string, chunkType>>({});
+
+  //const setChunksById: Record<string, chunkType> = {};
 
   //const [sourcesValue, setSourcesValue] = useState<sourceType[]>([]);
 
-  const streamAssistantMessage = async (answer: answerType) => {
-    const fullText = answer.answer;
-    const parts = fullText.match(/.{1,18}(\s|$)/g) || [fullText];
 
-    let assistantIndex = -1;
+async function readChatStream(
+  res: Response,
+  onDelta: (delta: string) => void,
+  onDone: (payload: { answer: string; sources: chunkType[] }) => void,
+) {
+  if (!res.body) {
+    throw new Error("Response body is missing");
+  }
 
-    setMessages((prev) => {
-      assistantIndex = prev.length;
-      return [
-        ...prev,
-        {
-          role: 'assistant',
-          content: '',
-          meta: 'Assistant',
-          streaming: true,
-        },
-      ];
-    });
+  const reader = res.body.getReader();
+  const decoder = new TextDecoder();
+  let buffer = "";
 
-    for (const part of parts) {
-      await wait(120);
+  while (true) {
+    const { value, done } = await reader.read();
 
-      setMessages((prev) =>
-        prev.map((message, index) =>
-          index === assistantIndex
-            ? { ...message, content: message.content + part }
-            : message,
-        ),
-      );
+    if (done) {
+      break;
     }
 
-    console.log("start answer,sources ääääääääääääääääää");
-    console.log(answer.sources);
-    console.log("end answer.sources ääääääääääääääääää");
+    buffer += decoder.decode(value, { stream: true });
 
-    setMessages((prev) : ChatMessage[] => {
-      //console.log("vorherige messages:", prev);
+    const lines = buffer.split("\n");
+    buffer = lines.pop() ?? "";
 
-      const next : ChatMessage[] = prev.map((message, index) =>
-        index === assistantIndex
-          ? {
-              ...message,
-              streaming: false,
-              //sources: answer.sources.map((s, index) => `${index + 1} ${s.title}`),
-              sources: answer.sources,
-            }
-          : message,
-      );
-      console.log("neue messages:", next);
-      return next;
-    });
+    for (const line of lines) {
+      if (!line.trim()) continue;
 
-    /*
+      const msg = JSON.parse(line);
+
+      if (msg.type === "delta") {
+        onDelta(msg.delta);
+      } else if (msg.type === "done") {
+        onDone({
+          answer: msg.answer,
+          sources: msg.sources,
+        });
+      } else if (msg.type === "error") {
+        throw new Error(msg.message ?? "Streaming failed");
+      }
+    }
+  }
+}
+
+
+const sendMessage = async (text: string) => {
+  const assistantId = crypto.randomUUID();
+
+  setMessages((prev) => [
+    ...prev,
+    {
+      id: assistantId,
+      role: "assistant",
+      content: "",
+      meta: "Assistant",
+      streaming: true,
+      sources: [],
+    },
+  ]);
+
+  const res = await fetch(`${baseUrl}/api/chat`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ message: text }),
+  });
+
+  if (!res.ok) {
+    throw new Error(`HTTP ${res.status}`);
+  }
+
+  try {
+    await readChatStream(
+      res,
+      (delta) => {
+        setMessages((prev) =>
+          prev.map((message) =>
+            message.id === assistantId
+              ? { ...message, content: message.content + delta }
+              : message,
+          ),
+        );
+      },
+      ({ answer, sources }) => {
+
+        setChunksById((prev) => ({
+          ...prev,
+          ...Object.fromEntries(sources.map((src) => [src.uuid, src])),
+        }));
+
+        setMessages((prev) =>
+          prev.map((message) =>
+            message.id === assistantId
+              ? {
+                  ...message,
+                  content: answer,
+                  sources,
+                  streaming: false,
+                }
+              : message,
+          ),
+        );
+      },
+    );
+  } catch (error) {
     setMessages((prev) =>
-      prev.map((message, index) =>
-        index === assistantIndex
+      prev.map((message) =>
+        message.id === assistantId
           ? {
               ...message,
               streaming: false,
-              //sources: ['Shared space example', 'Local habit formation'],
-              sources: answer.sources.map((s,index) => `${index+1} ${s.title}`)
+              content:
+                message.content || "Fehler beim Empfangen der Antwort.",
             }
           : message,
       ),
     );
-    */
-  };
+
+    throw error;
+  }
+
+
+
+};
+
+
+const handleSend = async () => {
+  const text = inputValue.trim();
+  if (!text /*|| isSending*/) return;
+
+  setInputValue("");
+  await sendMessage(text);
+
+
+
+};
 
 
 /*
-return items.map((item, index) => ({
-    ...item,
-    title: `${item.title}-${index + 1}`,
-  }));
-*/
-
   const handleSend = async () => {
     const text = inputValue.trim();
     if (!text || isSending) return;
@@ -129,13 +194,13 @@ return items.map((item, index) => ({
 
     //const fakeAnswer=data.answer;
 
-    setchunksById((prev) => ({
+    setChunksById((prev) => ({
       ...prev,
       ...Object.fromEntries(data.sources.map((src: chunkType) => [src.uuid, src])),
     }));
 
     console.log("Halleluja1");
-    console.log(chunksById);
+    console.log(setChunksById);
     console.log("Halleluja2");
     console.log(data.sources);
     console.log("Halleluja3");
@@ -155,6 +220,7 @@ return items.map((item, index) => ({
 
     setIsSending(false);
   };
+  */
 
   return (
   <section className="grid h-[calc(100vh-140px)] grid-cols-[fit-content(320px)_1fr] gap-5">
@@ -186,7 +252,7 @@ return items.map((item, index) => ({
         value={inputValue}
         onChange={setInputValue}
         onSend={handleSend}
-        disabled={isSending}
+        disabled={false}
       />
     </section>
   </section>
