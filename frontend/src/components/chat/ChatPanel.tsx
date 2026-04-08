@@ -168,69 +168,8 @@ const handleSend = async () => {
   setIsSending(true);
   await sendMessage(text);
 
-
-
 };
 
-
-/*
-  const handleSend = async () => {
-    const text = inputValue.trim();
-    if (!text || isSending) return;
-
-    setMessages((prev) => [
-      ...prev,
-      {
-        role: 'user',
-        content: text,
-        meta: 'You',
-      },
-    ]);
-    setInputValue('');
-    setIsSending(true);
-
-    //const fakeAnswer =
-    //  'One example would be a shared neighborhood workshop or kitchen. Once such a place exists, people do not only meet there physically, they also begin to coordinate routines around it. They may repair objects together, cook together, exchange tools, or organize regular events. In that way, the space supports new local habits by making repeated collective action easier.';
-
-    console.log("fetching ",`${baseUrl}/api/chat`)
-    const res = await fetch(`${baseUrl}/api/chat`
-      , {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ message: text }),
-    });
-
-    const data = await res.json();
-
-    //const fakeAnswer=data.answer;
-
-    setChunksById((prev) => ({
-      ...prev,
-      ...Object.fromEntries(data.sources.map((src: chunkType) => [src.uuid, src])),
-    }));
-
-    console.log("Halleluja1");
-    console.log(setChunksById);
-    console.log("Halleluja2");
-    console.log(data.sources);
-    console.log("Halleluja3");
-
-
-    await streamAssistantMessage(data);
-
-    setMessages((prev) => [
-      ...prev,
-      {
-        role: 'assistant',
-        content:
-          'Do you want a more concrete example from agriculture, culture, or urban neighborhoods?',
-        meta: 'Assistant follow-up',
-      },
-    ]);
-
-    setIsSending(false);
-  };
-  */
 
   return (
   <section className="grid h-[calc(100vh-140px)] grid-cols-[fit-content(320px)_1fr] gap-5">
@@ -243,13 +182,15 @@ const handleSend = async () => {
             Chat
           </h2>
           <p className="mt-1 text-[0.92rem] text-[#6b7280]">
-            Knowledge-guided answers with follow-up questions and source hints.
+            Knowledge-guided answers with {/*follow-up questions and*/} source hints.
           </p>
         </div>
 
+        { /*}
         <div className="rounded-full bg-[#eef3f8] px-3 py-2 text-[0.85rem] font-semibold text-[#6b7280]">
           Streaming enabled
         </div>
+        */}
       </header>
 
       <ChatMessages

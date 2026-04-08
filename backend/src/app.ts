@@ -5,7 +5,7 @@ import 'dotenv/config';
 
 import { config } from './config/env.js';
 
-import { answer, debugStream, streamAnswer } from './rag/raglib.js';
+import { streamAnswer } from './rag/raglib.js';
 
 const app = express();
 const PORT = 3000;

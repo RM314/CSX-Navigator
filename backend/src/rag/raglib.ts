@@ -29,9 +29,9 @@ import { config } from '../config/env.js';
 
 const KNOWLEDGE_DIR = path.resolve("knowledge");
 const INDEX_FILE = path.resolve("data", "rag-index.json");
-const CHUNK_SIZE = 500; // 900
-const CHUNK_OVERLAP = 100; // 150
-const TOP_K = 4;
+const CHUNK_SIZE = 900; // 900
+const CHUNK_OVERLAP = 150; // 150
+const TOP_K = 5;
 
 import {
   type SourceDocument,
@@ -179,6 +179,9 @@ async function buildIndex() {
     if (!chunk) {
       throw new Error(`Missing chunk at batch index ${index}`);
     }
+
+    console.log(chunk);
+
       indexedChunks.push({
         ...chunk,
         embedding,
@@ -233,67 +236,88 @@ async function search(query: string, topK = TOP_K): Promise<SearchResult[]> {
     .slice(0, topK);
 }
 
+/*
 function buildContext(results: SearchResult[]): string {
-  // nur das minimale
   return results
-    .map(
-      (result, i) =>
-        [
-          //`SOURCE ${i + 1}`,
-          `SOURCE ${result.id}`,
-          `Title: ${result.title}`,
-          "Content:",
-          result.content,
-        ].join("\n")
+    .map((result) =>
+      [
+        `[${result.id}]`,
+        `Title: ${result.title}`,
+        `Content:`,
+        result.content.trim(),
+      ].join("\n")
     )
-    .join("\n\n---\n\n");
-
-// Chunk: ${result.chunkIndex}`,
-//`UUID: ${result.uuid}`,
-//`Path: ${result.source}`,
-
+    .join("\n\n");
 }
+    */
 
-async function debugStream(question: string) {
-  const results = await search(question, TOP_K);
-  const context = buildContext(results);
-
-  const stream = await client.responses.create({
-    model: config.CHAT_MODEL,
-    stream: true,
-    instructions:
-      "You are a CSX knowledge assistant. Answer only from the provided context. If the context is insufficient, say so clearly. Cite sources as [SOURCE_1], [SOURCE_2], [SOURCE_3] etc.. Keep the answer focused and concrete.",
-    input: [
-      {
-        role: "user",
-        content: [
-          {
-            type: "input_text",
-            text: `Question:\n${question}\n\nContext:\n${context}`,
-          },
-        ],
-      },
-    ],
-  });
-
-  console.log("=== STREAM START ===");
-
-  for await (const event of stream) {
-    console.dir(event, { depth: null });
-  }
-
-  console.log("=== STREAM END ===");
+function buildContext(results: SearchResult[]): string {
+  return results
+    .map((result) =>
+      `[${result.id}]\n${result.content.trim()}`
+    )
+    .join("\n\n");
 }
 
 async function streamAnswer(question: string, res: Response) {
   const results = await search(question, TOP_K);
   const context = buildContext(results);
 
+
+  const minimalInstructions = `
+  You are a CSX knowledge assistant.
+
+  Answer only from the provided context. If the context is insufficient, say so clearly.
+  Cite sources as [SOURCE_1], [SOURCE_2], [SOURCE_3] etc..
+  Keep the answer focused and concrete.`;
+
+  const middleSizedInstructions = `
+  You are a CSX knowledge assistant.
+
+  Use only the provided context.
+  If the context is insufficient, say so clearly.
+
+  Citation rules:
+  - Cite using the exact source ids from the context.
+  - Source ids appear in square brackets, for example: [reiss2024::63]
+  - Do not invent source ids.
+  - Do not cite any source that is not present in the context.
+  - Support each substantial factual claim with one or more citations.
+  - If a statement is based on multiple sources, cite multiple source ids.
+
+  Answer rules:
+  - Keep the answer focused and concrete.
+  - Prefer short paragraphs.
+  - When possible, place citations at the end of the sentence or paragraph.
+  - Do not mention sources in any format other than the bracketed source ids.
+  `;
+
+  const dummyInstructions = `
+  You answer questions only from the provided context.
+
+  If the context is not sufficient, say that clearly.
+
+  You must cite sources.
+  Use only the exact source ids that appear in the context.
+  Write citations in this exact format: [source_id]
+  Examples: [reiss2024::63], [reiss2024::64]
+
+  Rules:
+  - Never invent a source id.
+  - Never change a source id.
+  - Never use SOURCE_1, SOURCE_2, etc.
+  - Every important factual statement must have a citation.
+  - If two sources support a statement, cite both.
+  - Do not use any knowledge outside the context.
+
+  Keep the answer focused and concrete.
+  `;
+
+
   const stream = await client.responses.create({
     model: config.CHAT_MODEL,
     stream: true,
-    instructions:
-      "You are a CSX knowledge assistant. Answer only from the provided context. If the context is insufficient, say so clearly. Cite sources as [SOURCE_1], [SOURCE_2], [SOURCE_3] etc.. Keep the answer focused and concrete.",
+    instructions: dummyInstructions,
     input: [
       {
         role: "user",
@@ -352,6 +376,14 @@ async function streamAnswer(question: string, res: Response) {
   );
 
   res.end();
+}
+
+async function listModels() {
+  const models = await client.models.list();
+  console.log("\n=== AVAILABLE MODELS ===\n");
+  for (const model of models.data) {
+    console.log(model.id);
+  }
 }
 
 
@@ -421,13 +453,5 @@ async function answer(question: string) {
 
 }
 
-async function listModels() {
-  const models = await client.models.list();
-  console.log("\n=== AVAILABLE MODELS ===\n");
-  for (const model of models.data) {
-    console.log(model.id);
-  }
-}
-
- export { buildIndex, answer, listModels, debugStream, streamAnswer };
+ export { buildIndex, listModels, answer, streamAnswer };
 
