@@ -25,6 +25,9 @@ import type { Response } from "express";
 
 import { config } from '../config/env.js';
 
+import { type ChatTurn } from "../../../shared/raq/types.js";
+
+import * as prompts from "./prompts.js";
 
 
 const KNOWLEDGE_DIR = path.resolve("knowledge");
@@ -259,72 +262,57 @@ function buildContext(results: SearchResult[]): string {
     .join("\n\n");
 }
 
-async function streamAnswer(question: string, res: Response) {
-  const results = await search(question, TOP_K);
+
+function buildRetrievalQuery(question: string, history: ChatTurn[] = []): string {
+  const recentTurns = history.slice(-4);
+
+  return [
+    ...recentTurns.map((turn) => `${turn.role}: ${turn.content}`),
+    `user: ${question}`,
+  ].join("\n");
+}
+
+function buildConversationTranscript(history: ChatTurn[]): string {
+  return history
+    .slice(-6)
+    .map((turn) => `${turn.role.toUpperCase()}: ${turn.content.trim()}`)
+    .join("\n\n");
+}
+
+async function streamAnswer(question: string, history: ChatTurn[], res: Response) {
+
+
+
+/*
+  const hist=history.map((turn) => ({
+    role: turn.role,
+    content: [{ type: "input_text" as const, text: turn.content}]
+  }));
+*/
+
+  const retrievalQuery = buildRetrievalQuery(question, history);
+  const results = await search(retrievalQuery, TOP_K);
   const context = buildContext(results);
-
-
-  const minimalInstructions = `
-  You are a CSX knowledge assistant.
-
-  Answer only from the provided context. If the context is insufficient, say so clearly.
-  Cite sources as [SOURCE_1], [SOURCE_2], [SOURCE_3] etc..
-  Keep the answer focused and concrete.`;
-
-  const middleSizedInstructions = `
-  You are a CSX knowledge assistant.
-
-  Use only the provided context.
-  If the context is insufficient, say so clearly.
-
-  Citation rules:
-  - Cite using the exact source ids from the context.
-  - Source ids appear in square brackets, for example: [reiss2024::63]
-  - Do not invent source ids.
-  - Do not cite any source that is not present in the context.
-  - Support each substantial factual claim with one or more citations.
-  - If a statement is based on multiple sources, cite multiple source ids.
-
-  Answer rules:
-  - Keep the answer focused and concrete.
-  - Prefer short paragraphs.
-  - When possible, place citations at the end of the sentence or paragraph.
-  - Do not mention sources in any format other than the bracketed source ids.
-  `;
-
-  const dummyInstructions = `
-  You answer questions only from the provided context.
-
-  If the context is not sufficient, say that clearly.
-
-  You must cite sources.
-  Use only the exact source ids that appear in the context.
-  Write citations in this exact format: [source_id]
-  Examples: [reiss2024::63], [reiss2024::64]
-
-  Rules:
-  - Never invent a source id.
-  - Never change a source id.
-  - Never use SOURCE_1, SOURCE_2, etc.
-  - Every important factual statement must have a citation.
-  - If two sources support a statement, cite both.
-  - Do not use any knowledge outside the context.
-
-  Keep the answer focused and concrete.
-  `;
-
+  const transcript = buildConversationTranscript(history);
 
   const stream = await client.responses.create({
     model: config.CHAT_MODEL,
     stream: true,
-    instructions: dummyInstructions,
+    instructions: prompts.dialogInstructions,
     input: [
       {
-        role: "user",
+        role: "user" as const,
         content: [
           {
-            type: "input_text",
-            text: `Question:\n${question}\n\nContext:\n${context}`,
+            type: "input_text" as const,
+            text: `Recent conversation:
+            ${transcript || "(none)"}
+
+            Current user message:
+            ${question}
+
+            Relevant context:
+            ${context}`,
           },
         ],
       },

@@ -6,7 +6,7 @@ import { ChatComposer } from './ChatComposer';
 import { ChatMessages } from './ChatMessages';
 import { ContextPanel } from './ContextPanel';
 
-import { type chunkType} from '../../../../shared/raq/types'
+import { type chunkType, type ChatTurn} from '../../../../shared/raq/types'
 
 
 const baseUrl = import.meta.env.VITE_API_BASE_URL;
@@ -70,6 +70,24 @@ async function readChatStream(
   }
 }
 
+function isChatTurnMessage( message: ChatMessage): message is ChatMessage & { role: "user" | "assistant" } {
+  return (
+    (message.role === "user" || message.role === "assistant") &&
+    message.content.trim().length > 0
+  );
+}
+
+
+function buildHistory(messages: ChatMessage[]): ChatTurn[] {
+  return messages
+    .filter(isChatTurnMessage)
+    .slice(-6)
+    .map((message) => ({
+      role: message.role,
+      content: message.content,
+    }));
+}
+
 
 const sendMessage = async (text: string) => {
   const assistantId = crypto.randomUUID();
@@ -97,17 +115,19 @@ const sendMessage = async (text: string) => {
     },
   ]);
 
-  const res = await fetch(`${baseUrl}/api/chat`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ message: text }),
-  });
-
-  if (!res.ok) {
-    throw new Error(`HTTP ${res.status}`);
-  }
+   const history = buildHistory(messages);
 
   try {
+    const res = await fetch(`${baseUrl}/api/chat`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ message: text, history }),
+    });
+
+    if (!res.ok) {
+      throw new Error(`HTTP ${res.status}`);
+    }
+
     await readChatStream(
       res,
       (delta) => {

@@ -72,3 +72,7 @@ export type SourceDocument = {
   content: string;
 };
 
+export type ChatTurn = {
+  role: "user" | "assistant";
+  content: string;
+};
