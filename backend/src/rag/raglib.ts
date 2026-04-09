@@ -239,21 +239,6 @@ async function search(query: string, topK = TOP_K): Promise<SearchResult[]> {
     .slice(0, topK);
 }
 
-/*
-function buildContext(results: SearchResult[]): string {
-  return results
-    .map((result) =>
-      [
-        `[${result.id}]`,
-        `Title: ${result.title}`,
-        `Content:`,
-        result.content.trim(),
-      ].join("\n")
-    )
-    .join("\n\n");
-}
-    */
-
 function buildContext(results: SearchResult[]): string {
   return results
     .map((result) =>
@@ -280,15 +265,6 @@ function buildConversationTranscript(history: ChatTurn[]): string {
 }
 
 async function streamAnswer(question: string, history: ChatTurn[], res: Response) {
-
-
-
-/*
-  const hist=history.map((turn) => ({
-    role: turn.role,
-    content: [{ type: "input_text" as const, text: turn.content}]
-  }));
-*/
 
   const retrievalQuery = buildRetrievalQuery(question, history);
   const results = await search(retrievalQuery, TOP_K);
