@@ -61,7 +61,7 @@ export type IndexedChunk = Chunk & {
   embedding: number[];
 };
 
-export type SearchResult = IndexedChunk & {
+export type SearchResult = Chunk & {
   score: number;
 };
 
