@@ -4,7 +4,7 @@ import { config } from "../config/env.js";
 
 const documentSchema = new Schema(
   {
-    slug: { type: String, required: true, unique: true, index: true },
+    id: { type: String, required: true, unique: true, index: true },
     title: { type: String, required: true },
     source: { type: String, required: true },
     mimeType: { type: String, required: true, default: "text/plain" },
@@ -14,6 +14,7 @@ const documentSchema = new Schema(
       data: { type: Buffer, required: true }, // original file data; useful for PDFs, for texts useless
     },
     extractedText: { type: String, required: true },
+    contentHash: { type: String, required: true, index: true },
   },
   {
     timestamps: true,
@@ -48,16 +49,33 @@ const chunkSchema = new Schema(
 
 chunkSchema.index({ documentId: 1, chunkIndex: 1 }, { unique: true });
 
-type RagDocumentDb = InferSchemaType<typeof documentSchema> & {
+type RagDocumentShape = InferSchemaType<typeof documentSchema>;
+
+type RagDocumentDb = RagDocumentShape & {
   _id: mongoose.Types.ObjectId;
 };
+
+type RagDocumentInput = Omit<RagDocumentShape,"createdAt" | "updatedAt">;
+
+/*
+type RagDocumentInput = Omit<
+  InferSchemaType<typeof documentSchema>,
+  "createdAt" | "updatedAt"
+>;
+*/
 
 type RagChunkDb = InferSchemaType<typeof chunkSchema> & {
   _id: mongoose.Types.ObjectId;
 };
 
-const RagDocument = model("RagDocument", documentSchema);
-const RagChunk = model("RagChunk", chunkSchema);
+const RagDocument = model<RagDocumentDb>("RagDocument", documentSchema);
+const RagChunk = model<RagDocumentDb>("RagChunk", chunkSchema);
 
 export { documentSchema, chunkSchema, RagDocument, RagChunk };
-export type { RagDocumentDb, RagChunkDb };
+export type { RagDocumentDb, RagChunkDb, RagDocumentInput };
+
+
+
+
+
+
