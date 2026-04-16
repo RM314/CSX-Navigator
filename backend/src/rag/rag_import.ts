@@ -64,6 +64,7 @@ async function loadKnowledgeDocument( txtFilePath: string, mediaFilePath: string
     id: path.parse(mediaFilePath ? mediaFilePath : txtFilePath).name,
     title: path.parse(mediaFilePath ? mediaFilePath : txtFilePath).name,
     source: txtFilePath,
+    authors: "xxxxx",
     mimeType,
     fileName,
     file: {

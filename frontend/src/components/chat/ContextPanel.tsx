@@ -10,7 +10,7 @@ type ContextPanelProps = {
 export function ContextPanel({ selectedSource , chunksById}: ContextPanelProps) {
 
   const s = chunksById && selectedSource ? chunksById[selectedSource] : null;
-  console.log("UUU",s?.id);
+  //console.log("UUU",s?.id);
 
   // {*/<aside className="h-fit rounded-[20px] border border-[#d8e0ea] bg-white p-[18px] shadow-[0_16px_36px_rgba(31,41,55,0.08)]">*/}
 

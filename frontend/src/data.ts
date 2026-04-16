@@ -1,4 +1,4 @@
-import type { ChatMessage, DocumentItem} from './types';
+import type { ChatMessage} from './types';
 
 /*
 export const SOURCE_CHUNKS: Record<string, SourceChunk> = {
@@ -30,8 +30,10 @@ export const INITIAL_MESSAGES: ChatMessage[] = [
   }
 ];
 
+/*
 export const INITIAL_DOCUMENTS: DocumentItem[] = [
   { id: 1, title: 'Community Kitchen Case Study', author: 'Anna Meyer', type: 'PDF' },
   { id: 2, title: 'Shared Space and Routine Formation', author: 'Paul Richter', type: 'PDF' },
   { id: 3, title: 'Urban Workshop Notes', author: 'M. Becker', type: 'TXT' },
 ];
+*/
