@@ -46,20 +46,24 @@ function isSupportedKnowledgeFile(filePath: string): boolean {
 
 // ==== Load one File ================
 
-async function loadKnowledgeDocument( filePath: string ): Promise<RagDocumentInput | null> {
-  if (!isSupportedKnowledgeFile(filePath)) {
+//
+async function loadKnowledgeDocument( txtFilePath: string, mediaFilePath: string | null): Promise<RagDocumentInput | null> {
+  if (!isSupportedKnowledgeFile(txtFilePath)) {
     return null;
   }
 
-  const extractedText = await fs.readFile(filePath, "utf8");
-  const fileData = await fs.readFile(filePath); // ist hier natürlich doppelt, wird später passendes pdf
-  const fileName = path.basename(filePath);
-  const mimeType = getMimeTypeFromExtension(filePath);
+  const extractedText = await fs.readFile(txtFilePath, "utf8");
+  const fileData = (mediaFilePath) ? await fs.readFile(mediaFilePath) : Buffer.alloc(0);
+  const fileName = path.basename( (mediaFilePath) ? mediaFilePath : txtFilePath);
+  const mimeType = getMimeTypeFromExtension((mediaFilePath) ? mediaFilePath : txtFilePath);
+
+  //console.log(`loaded ${txtFilePath} - ${mediaFilePath ? mediaFilePath : 'no media helper file'}`);
+  console.log(`loaded ${txtFilePath} - ${mediaFilePath}`);
 
   return {
-    id: path.parse(filePath).name,
-    title: path.parse(filePath).name,
-    source: filePath,
+    id: path.parse(mediaFilePath ? mediaFilePath : txtFilePath).name,
+    title: path.parse(mediaFilePath ? mediaFilePath : txtFilePath).name,
+    source: txtFilePath,
     mimeType,
     fileName,
     file: {
@@ -72,14 +76,6 @@ async function loadKnowledgeDocument( filePath: string ): Promise<RagDocumentInp
 }
 
 // === DB-Access ====================
-/*
-async function getSourceDocumentBySlug(
-  slug: string,
-): Promise<RagDocumentDb | null> {
-  return RagDocument.findOne({ slug });
-}
-  */
-
 async function upsertSourceDocument( doc: RagDocumentInput ): Promise<RagDocumentDb> {
   const result = await RagDocument.findOneAndUpdate(
     { id: doc.id },
@@ -100,11 +96,11 @@ async function upsertSourceDocument( doc: RagDocumentInput ): Promise<RagDocumen
 
 // ===== Import one file ======
 
-async function indexDocumentFile(filePath: string): Promise<void> {
-  const doc = await loadKnowledgeDocument(filePath);
+async function indexDocumentFile(txtFilePath: string, mediaFilePath: string | null): Promise<void> {
+  const doc = await loadKnowledgeDocument(txtFilePath, mediaFilePath);
 
   if (!doc) {
-    console.log(`Skipping unsupported file: ${filePath}`);
+    console.log(`Skipping unsupported file pair: ${txtFilePath} - ${mediaFilePath}`);
     return;
   }
 
@@ -134,14 +130,75 @@ async function indexDocumentFile(filePath: string): Promise<void> {
    Import eines ganzen Ordners
    ========================= */
 
+function isMainFile(fileName: string): boolean {
+  return fileName.endsWith(".txt") || fileName.endsWith(".md");
+}
+
+function isHelpFile(fileName: string): boolean {
+  return fileName.endsWith(".pdf");
+}
+
+function getBaseName(fileName: string): string {
+  return path.parse(fileName).name;
+}
+
+const MAIN_EXTENSIONS = new Set([".txt", ".md"]);
+const HELP_EXTENSIONS = new Set([".pdf"]);
+
 async function indexKnowledgeDirectory(dirPath: string): Promise<void> {
   const entries = await fs.readdir(dirPath, { withFileTypes: true });
+  const files = entries.filter((entry) => entry.isFile()).map((entry) => entry.name);
 
-  for (const entry of entries) {
-    if (!entry.isFile()) continue;
+//  console.log(files)
 
-    const filePath = path.join(dirPath, entry.name);
-    await indexDocumentFile(filePath);
+  const groups = new Map<string, { mainFiles: string[]; helpFiles: string[];} >();
+
+  for (const file of files) {
+    const { name: baseName, ext } = path.parse(file);
+
+    const group = groups.get(baseName) ?? { mainFiles: [], helpFiles: [] };
+
+    if (MAIN_EXTENSIONS.has(ext)) {
+      group.mainFiles.push(file);
+    } else if (HELP_EXTENSIONS.has(ext)) {
+      group.helpFiles.push(file);
+    }
+
+    groups.set(baseName, group);
+  }
+
+  //console.log(groups);
+
+
+  for (const [baseName, group] of groups) {
+    if (group.mainFiles.length === 0) continue;
+
+    if (group.mainFiles.length > 1) {
+      throw new Error(
+        `Only one main file is allowed for "${baseName}", but found: ${group.mainFiles.join(", ")}`,
+      );
+    }
+
+    if (group.helpFiles.length > 1) {
+      throw new Error(
+        `Only one help file is allowed for "${baseName}", but found: ${group.helpFiles.join(", ")}`,
+      );
+    }
+
+    //console.log(group)
+
+    const [mainFile] = group.mainFiles;
+    if (!mainFile) { continue; }
+
+    const [helpFile] = group.helpFiles;
+
+    const mainFilePath = path.join(dirPath, mainFile);
+    const helpFilePath = helpFile ? path.join(dirPath, helpFile) : null;
+
+    //console.log(mainFilePath, helpFilePath);
+
+
+    await indexDocumentFile(mainFilePath, helpFilePath);
   }
 }
 

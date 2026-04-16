@@ -11,7 +11,7 @@ const documentSchema = new Schema(
     fileName: { type: String, required: true },
     file: {
       mimeType: { type: String, required: true },
-      data: { type: Buffer, required: true }, // original file data; useful for PDFs, for texts useless
+      data: { type: Buffer, required: true }, // original file data; useful e.g. for PDFs, right now it's just being dragged along
     },
     extractedText: { type: String, required: true },
     contentHash: { type: String, required: true, index: true },
