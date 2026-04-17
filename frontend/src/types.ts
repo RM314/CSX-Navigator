@@ -28,6 +28,7 @@ export type DocumentListItemDTO = {
   title: string;
   authors: string;
   type: string;
+  hasMedia: boolean;
 };
 
 export const documentItemSchema = z.object({
@@ -35,6 +36,7 @@ export const documentItemSchema = z.object({
   title: z.string(),
   authors: z.string().nullable(),
   type: z.string(),
+  hasMedia: z.boolean(),
 });
 
 export const documentListSchema = z.array(documentItemSchema);

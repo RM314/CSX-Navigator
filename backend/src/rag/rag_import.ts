@@ -53,7 +53,8 @@ async function loadKnowledgeDocument( txtFilePath: string, mediaFilePath: string
   }
 
   const extractedText = await fs.readFile(txtFilePath, "utf8");
-  const fileData = (mediaFilePath) ? await fs.readFile(mediaFilePath) : Buffer.alloc(0);
+  //const fileData = (mediaFilePath) ? await fs.readFile(mediaFilePath) : Buffer.alloc(0);
+  const fileData = (mediaFilePath) ? await fs.readFile(mediaFilePath) : await fs.readFile(txtFilePath);
   const fileName = path.basename( (mediaFilePath) ? mediaFilePath : txtFilePath);
   const mimeType = getMimeTypeFromExtension((mediaFilePath) ? mediaFilePath : txtFilePath);
 

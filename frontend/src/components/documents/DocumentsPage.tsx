@@ -67,7 +67,7 @@ export function DocumentsPage() {
         <div>
           <h2 className="text-[1.2rem] font-semibold text-[#1f2937]">Documents</h2>
           <p className="mt-1 text-[0.92rem] text-[#6b7280]">
-            Available documents from the backend index.
+            Inspect indexed documents and open available media files.
           </p>
         </div>
       </header>
