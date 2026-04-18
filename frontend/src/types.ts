@@ -34,7 +34,7 @@ export type DocumentListItemDTO = {
 export const documentItemSchema = z.object({
   id: z.string(),
   title: z.string(),
-  authors: z.string().nullable(),
+  authors: z.array(z.string()),
   type: z.string(),
   hasMedia: z.boolean(),
 });

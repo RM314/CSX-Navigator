@@ -23,12 +23,6 @@ export function DocumentsPage() {
           throw new Error(`Failed to load documents (${response.status})`);
         }
 
-        //const data: DocumentItem[] = await response.json();
-        //setDocuments(data);
-
-        //console.log(data);
-
-
         const json = await response.json();
         const data = documentListSchema.parse(json);
 

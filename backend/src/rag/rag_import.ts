@@ -11,6 +11,9 @@ import { file } from "zod";
 import  {splitIntoChunksWithLangChain, replaceChunksForDocument} from "./chunks.js"
 import { config } from "../config/env.js";
 
+import {documentMetaSchema} from "./types.js";
+
+
 // === Helpers ======================
 
 // make hash a bit more robust against
@@ -46,31 +49,39 @@ function isSupportedKnowledgeFile(filePath: string): boolean {
 
 // ==== Load one File ================
 
-//
-async function loadKnowledgeDocument( txtFilePath: string, mediaFilePath: string | null): Promise<RagDocumentInput | null> {
-  if (!isSupportedKnowledgeFile(txtFilePath)) {
-    return null;
+async function loadKnowledgeDocument(metaFilePath: string): Promise<RagDocumentInput> {
+  const metaRawText = await fs.readFile(metaFilePath, "utf8");
+
+  let metaJson: unknown;
+  try {
+    metaJson = JSON.parse(metaRawText);
+  } catch {
+    throw new Error(`Invalid JSON in metadata file: ${metaFilePath}`);
   }
 
-  const extractedText = await fs.readFile(txtFilePath, "utf8");
-  //const fileData = (mediaFilePath) ? await fs.readFile(mediaFilePath) : Buffer.alloc(0);
-  const fileData = (mediaFilePath) ? await fs.readFile(mediaFilePath) : await fs.readFile(txtFilePath);
-  const fileName = path.basename( (mediaFilePath) ? mediaFilePath : txtFilePath);
-  const mimeType = getMimeTypeFromExtension((mediaFilePath) ? mediaFilePath : txtFilePath);
+  const meta = documentMetaSchema.parse(metaJson);
 
-  //console.log(`loaded ${txtFilePath} - ${mediaFilePath ? mediaFilePath : 'no media helper file'}`);
-  console.log(`loaded ${txtFilePath} - ${mediaFilePath}`);
+  const baseDir = path.dirname(metaFilePath);
+  const txtFilePath = path.join(baseDir, meta.txtFile);
+  const mediaFilePath = meta.mediaFile ? path.join(baseDir, meta.mediaFile) : null;
+
+  const extractedText = await fs.readFile(txtFilePath, "utf8");
+
+  const mediaData = mediaFilePath ? await fs.readFile(mediaFilePath) : Buffer.alloc(0);
+  const mediaMimeType = mediaFilePath ? getMimeTypeFromExtension(mediaFilePath) : "application/octet-stream";
+
+  console.log(" mediaMimeType: ", mediaMimeType);
 
   return {
-    id: path.parse(mediaFilePath ? mediaFilePath : txtFilePath).name,
-    title: path.parse(mediaFilePath ? mediaFilePath : txtFilePath).name,
-    source: txtFilePath,
-    authors: "xxxxx",
-    mimeType,
-    fileName,
-    file: {
-      mimeType,
-      data: fileData,
+    id: meta.id,
+    title: meta.title,
+    authors: meta.authors,
+    publishedAt: meta.publishedAt,
+    summary: meta.summary,
+    source: meta.source,
+    media: {
+      mimeType: mediaMimeType,
+      data: mediaData,
     },
     extractedText,
     contentHash: hashText(extractedText),
@@ -78,7 +89,9 @@ async function loadKnowledgeDocument( txtFilePath: string, mediaFilePath: string
 }
 
 // === DB-Access ====================
-async function upsertSourceDocument( doc: RagDocumentInput ): Promise<RagDocumentDb> {
+async function upsertSourceDocument(doc: RagDocumentInput): Promise<RagDocumentDb> {
+  const alreadyExists = await RagDocument.exists({ id: doc.id });
+
   const result = await RagDocument.findOneAndUpdate(
     { id: doc.id },
     doc,
@@ -93,16 +106,22 @@ async function upsertSourceDocument( doc: RagDocumentInput ): Promise<RagDocumen
     throw new Error(`Failed to upsert document "${doc.id}"`);
   }
 
+  console.log(
+    alreadyExists
+      ? `updated document "${doc.id}"`
+      : `inserted document "${doc.id}"`,
+  );
+
   return result;
 }
 
 // ===== Import one file ======
 
-async function indexDocumentFile(txtFilePath: string, mediaFilePath: string | null): Promise<void> {
-  const doc = await loadKnowledgeDocument(txtFilePath, mediaFilePath);
+async function indexDocumentFile(metaFilePath: string): Promise<void> {
+  const doc = await loadKnowledgeDocument(metaFilePath);
 
   if (!doc) {
-    console.log(`Skipping unsupported file pair: ${txtFilePath} - ${mediaFilePath}`);
+    console.log(`Skipping unsupported meta file ${metaFilePath}`);
     return;
   }
 
@@ -132,75 +151,18 @@ async function indexDocumentFile(txtFilePath: string, mediaFilePath: string | nu
    Import eines ganzen Ordners
    ========================= */
 
-function isMainFile(fileName: string): boolean {
-  return fileName.endsWith(".txt") || fileName.endsWith(".md");
-}
-
-function isHelpFile(fileName: string): boolean {
-  return fileName.endsWith(".pdf");
-}
-
-function getBaseName(fileName: string): string {
-  return path.parse(fileName).name;
-}
-
-const MAIN_EXTENSIONS = new Set([".txt", ".md"]);
-const HELP_EXTENSIONS = new Set([".pdf"]);
-
 async function indexKnowledgeDirectory(dirPath: string): Promise<void> {
   const entries = await fs.readdir(dirPath, { withFileTypes: true });
-  const files = entries.filter((entry) => entry.isFile()).map((entry) => entry.name);
 
-//  console.log(files)
+  const metaFiles = entries
+    .filter((entry) => entry.isFile())
+    .map((entry) => entry.name)
+    .filter((name) => path.extname(name).toLowerCase() === ".json")
+    .sort();
 
-  const groups = new Map<string, { mainFiles: string[]; helpFiles: string[];} >();
-
-  for (const file of files) {
-    const { name: baseName, ext } = path.parse(file);
-
-    const group = groups.get(baseName) ?? { mainFiles: [], helpFiles: [] };
-
-    if (MAIN_EXTENSIONS.has(ext)) {
-      group.mainFiles.push(file);
-    } else if (HELP_EXTENSIONS.has(ext)) {
-      group.helpFiles.push(file);
-    }
-
-    groups.set(baseName, group);
-  }
-
-  //console.log(groups);
-
-
-  for (const [baseName, group] of groups) {
-    if (group.mainFiles.length === 0) continue;
-
-    if (group.mainFiles.length > 1) {
-      throw new Error(
-        `Only one main file is allowed for "${baseName}", but found: ${group.mainFiles.join(", ")}`,
-      );
-    }
-
-    if (group.helpFiles.length > 1) {
-      throw new Error(
-        `Only one help file is allowed for "${baseName}", but found: ${group.helpFiles.join(", ")}`,
-      );
-    }
-
-    //console.log(group)
-
-    const [mainFile] = group.mainFiles;
-    if (!mainFile) { continue; }
-
-    const [helpFile] = group.helpFiles;
-
-    const mainFilePath = path.join(dirPath, mainFile);
-    const helpFilePath = helpFile ? path.join(dirPath, helpFile) : null;
-
-    //console.log(mainFilePath, helpFilePath);
-
-
-    await indexDocumentFile(mainFilePath, helpFilePath);
+  for (const metaFile of metaFiles) {
+    const metaFilePath = path.join(dirPath, metaFile);
+    await indexDocumentFile(metaFilePath);
   }
 }
 
