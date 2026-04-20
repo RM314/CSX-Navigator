@@ -1,6 +1,6 @@
 import { RecursiveCharacterTextSplitter } from "@langchain/textsplitters";
 
-import type { SourceDocument, Chunk,} from "../../../shared/raq/types.js";
+import type { SourceDocument, Chunk,} from "../shared/types.js";
 
 import {  RagChunk, type RagChunkDb, type RagDocumentDb } from "./types.js";
 

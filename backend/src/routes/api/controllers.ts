@@ -4,7 +4,7 @@
 import { Router } from "express";
 
 import { streamAnswer } from '../../rag/raglib.js';
-import { type ChatTurn } from '../../../../shared/raq/types.js';
+import { type ChatTurn } from '../../shared/types.js';
 import { RagDocument } from "../../rag/types.js";
 
 export const apiRouter = Router();

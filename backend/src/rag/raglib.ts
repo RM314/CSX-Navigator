@@ -25,7 +25,7 @@ import {
   type SearchResult,
   type answerType,
   answerSchema,
-} from "../../../shared/raq/types.js";
+} from "../shared/types.js";
 import * as prompts from "./prompts.js";
 
 import { documentSchema, chunkSchema, RagDocument, RagChunk } from "./types.js";
