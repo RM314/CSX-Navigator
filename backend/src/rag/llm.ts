@@ -1,5 +1,7 @@
 import OpenAI from "openai";
 
+import { InferenceClient } from "@huggingface/inference";
+
 import { config } from "../config/env.js";
 
 
@@ -10,9 +12,12 @@ export const client = new OpenAI({
 });
 
 
+
 /*
-export const client = new OpenAI({
+export const hfClient = new OpenAI({
   baseURL: "https://router.huggingface.co/v1",
   apiKey: config.HUGGING_FACE_ACCESS_TOKEN,
-});
-*/
+});*/
+
+export const hfClient = new InferenceClient(config.LLM_API_KEY);
+

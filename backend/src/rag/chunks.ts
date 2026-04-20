@@ -8,7 +8,7 @@ import { config } from "../config/env.js";
 
 import OpenAI from "openai";
 
-import { client } from "./llm.js";
+import { client, hfClient } from "./llm.js";
 
 const textSplitter = new RecursiveCharacterTextSplitter({
   chunkSize: Number(config.RAG_CHUNK_SIZE),
@@ -23,31 +23,6 @@ function normalizeWhitespace(text: string): string {
     .replace(/\n{3,}/g, "\n\n")
     .trim();
 }
-
-/*
-async function splitIntoChunksWithLangChain( doc: SourceDocument): Promise<Chunk[]>  {
-
-  const splitDocs = await textSplitter.createDocuments([doc.content]);
-  const mappedChunks = splitDocs.map((splitDoc, chunkIndex) => {
-  const chunkText = normalizeWhitespace(splitDoc.pageContent);
-
-  if (!chunkText) {
-    return null;
-  }
-
-  const chunk: Chunk = {
-    id: `${doc.id}::${chunkIndex}`,
-    docId: doc.id,
-    title: doc.title,
-    source: doc.source,
-    content: chunkText,
-    chunkIndex,
-    uuid: crypto.randomUUID(),
-  };
-
-  return chunk;
-});
-*/
 
 async function splitIntoChunksWithLangChain(doc: RagDocumentDb): Promise<Chunk[]> {
   const splitDocs = await textSplitter.createDocuments([doc.extractedText]);
@@ -74,16 +49,21 @@ async function splitIntoChunksWithLangChain(doc: RagDocumentDb): Promise<Chunk[]
 
 async function embedTexts(texts: string[]): Promise<number[][]> {
 
-
-  const response = await client.embeddings.create({
+  if (config.USE_HF_EMBEDDING) {
+    const out = await hfClient.featureExtraction({
+    provider: "hf-inference",
     model: config.EMBEDDING_MODEL,
-    input: texts,
-    encoding_format: "float",
-  });
-
-
-  return response.data.map((item) => item.embedding);
-
+    inputs: texts,
+    });
+    return out as number[][];
+  } else {
+      const response = await client.embeddings.create({
+      model: config.EMBEDDING_MODEL,
+      input: texts,
+      encoding_format: "float",
+    });
+    return response.data.map((item) => item.embedding);
+  }
 }
 
 async function replaceChunksForDocument( documentRecord: RagDocumentDb, chunks: Chunk[]) {

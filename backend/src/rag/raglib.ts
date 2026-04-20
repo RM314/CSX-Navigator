@@ -10,9 +10,7 @@ import type { ResponseStreamEvent } from "openai/resources/responses/responses";
 
 import { connectDb } from "./db.js";
 import {embedTexts} from "./chunks.js";
-import { client } from "./llm.js";
-
-//import { client } from "./llm.js";
+import { client} from "./llm.js";
 
 import type { Response } from "express";
 
@@ -124,18 +122,6 @@ ${context}`,
     },
   ];
 }
-
-async function createStreamingLLMOld(transcript: string | null, question: string, context: string) {
-  const input = buildLlmInput(transcript, question, context);
-
-  return client.responses.create({
-    model: config.CHAT_MODEL,
-    stream: true,
-    instructions: prompts.dialogInstructions,
-    input,
-  });
-}
-
 
 export async function createStreamingLLM(transcript: string, question: string, context: string ): Promise<AsyncIterable<ResponseStreamEvent>> {
   const input = buildLlmInput(transcript, question, context);
