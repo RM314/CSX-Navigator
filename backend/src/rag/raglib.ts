@@ -12,7 +12,7 @@ import { connectDb } from "./db.js";
 import {embedTexts} from "./chunks.js";
 import { client } from "./llm.js";
 
-import { hfClient } from "./llm.js";
+//import { client } from "./llm.js";
 
 import type { Response } from "express";
 
@@ -140,7 +140,7 @@ async function createStreamingLLMOld(transcript: string | null, question: string
 export async function createStreamingLLM(transcript: string, question: string, context: string ): Promise<AsyncIterable<ResponseStreamEvent>> {
   const input = buildLlmInput(transcript, question, context);
 
-  const stream = await hfClient.responses.create({
+  const stream = await client.responses.create({
     model: config.CHAT_MODEL,
     // Beispiel:
     // "openai/gpt-oss-120b:groq"
