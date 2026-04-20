@@ -1,4 +1,4 @@
-import type { chunkType } from '../../shared/raq/types'
+import type { chunkType } from './shared/types'
 import { z } from 'zod';
 
 
