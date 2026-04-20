@@ -27,7 +27,7 @@
     "prebuild": "rm -rf dist",
     "build": "tsc",
     "prestart": "npm run build",
-    "start": "node --env-file=.env.local dist/app.js"
+    "start": "node --env-file=.env.local dist/backend/src/app.js"
   },
   "devDependencies": {
     "@types/cors": "^2.8.19",
