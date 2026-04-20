@@ -1,9 +1,9 @@
 import { Navigate, Route, Routes } from 'react-router-dom';
 import { TopNav } from './components/common/TopNav';
-import { AdminPage } from './pages/AdminPage';
+
 import { ChatPage } from './pages/ChatPage';
 import { DocumentsPage } from './pages/DocumentsPage';
-import { PreferencesPage } from './pages/PreferencesPage';
+import { AppShell } from './pages/AppShell';
 
 export default function App() {
   return (
@@ -12,11 +12,11 @@ export default function App() {
 
       <main className="mx-auto max-w-[1180px] p-7">
         <Routes>
-          <Route path="/" element={<Navigate to="/chat" replace />} />
-          <Route path="/chat" element={<ChatPage />} />
-          <Route path="/documents" element={<DocumentsPage />} />
-          <Route path="/preferences" element={<PreferencesPage />} />
-          <Route path="/admin" element={<AdminPage />} />
+          <Route element={<AppShell />}>
+            <Route path="/" element={<Navigate to="/chat" replace />} />
+            <Route path="/chat" element={<ChatPage />} />
+            <Route path="/documents" element={<DocumentsPage />} />
+          </Route>
         </Routes>
       </main>
     </div>

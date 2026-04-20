@@ -1,5 +1,9 @@
+import { useOutletContext } from 'react-router-dom';
 import { ChatPanel } from '../components/chat/ChatPanel';
+import type { ChatShellContext } from './AppShell';
 
 export function ChatPage() {
-  return <ChatPanel />;
+  const chatState = useOutletContext<ChatShellContext>();
+
+  return <ChatPanel {...chatState} />;
 }

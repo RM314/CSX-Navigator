@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { INITIAL_MESSAGES } from '../../data';
+//import { useState } from 'react';
+//import { INITIAL_MESSAGES } from '../../data';
 import type { ChatMessage } from '../../types';
 //import { wait } from '../../utils';
 import { ChatComposer } from './ChatComposer';
@@ -9,17 +9,42 @@ import { ContextPanel } from './ContextPanel';
 import { type chunkType, type ChatTurn} from '../../../../shared/raq/types'
 
 
+type ChatPanelProps = {
+  messages: ChatMessage[];
+  setMessages: React.Dispatch<React.SetStateAction<ChatMessage[]>>;
+  selectedSource: string | null;
+  setSelectedSource: React.Dispatch<React.SetStateAction<string | null>>;
+  inputValue: string;
+  setInputValue: React.Dispatch<React.SetStateAction<string>>;
+  isSending: boolean;
+  setIsSending: React.Dispatch<React.SetStateAction<boolean>>;
+  chunksById: Record<string, chunkType>;
+  setChunksById: React.Dispatch<React.SetStateAction<Record<string, chunkType>>>;
+};
+
+
 const baseUrl = import.meta.env.VITE_API_BASE_URL;
 
-export function ChatPanel() {
-  const [messages, setMessages] = useState<ChatMessage[]>(INITIAL_MESSAGES);
-  const [selectedSource, setSelectedSource] = useState<string | null>(
-    'Community kitchen case study',
-  );
-  const [inputValue, setInputValue] = useState('');
-  const [isSending, setIsSending] = useState(false);
+export function ChatPanel({
+  messages,
+  setMessages,
+  selectedSource,
+  setSelectedSource,
+  inputValue,
+  setInputValue,
+  isSending,
+  setIsSending,
+  chunksById,
+  setChunksById,
+}: ChatPanelProps) {
+  //const [messages, setMessages] = useState<ChatMessage[]>(INITIAL_MESSAGES);
+  //const [selectedSource, setSelectedSource] = useState<string | null>(
+    //'Community kitchen case study',
+  //);
+  //const [inputValue, setInputValue] = useState('');
+  //const [isSending, setIsSending] = useState(false);
 
-  const [chunksById, setChunksById] = useState<Record<string, chunkType>>({});
+  //const [chunksById, setChunksById] = useState<Record<string, chunkType>>({});
 
   //const setChunksById: Record<string, chunkType> = {};
 
@@ -93,6 +118,26 @@ const sendMessage = async (text: string) => {
   const assistantId = crypto.randomUUID();
   const userSId = crypto.randomUUID();
 
+   const userMessage: ChatMessage = {
+    id: userSId,
+    role: "user",
+    content: text,
+    meta: "You",
+  };
+
+  const assistantMessage: ChatMessage = {
+    id: assistantId,
+    role: "assistant",
+    content: "",
+    meta: "Assistant",
+    streaming: true,
+    sources: [],
+  };
+
+  const nextMessages = [...messages, userMessage, assistantMessage];
+  setMessages(nextMessages);
+
+  /*
    setMessages((prev) => [
       ...prev,
       {
@@ -114,6 +159,7 @@ const sendMessage = async (text: string) => {
       sources: [],
     },
   ]);
+  */
 
    const history = buildHistory(messages);
 
