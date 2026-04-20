@@ -20,14 +20,6 @@ export function DocumentRow({ item }: DocumentRowProps) {
       </div>
 
 
-
-      <button
-        type="button"
-        className="rounded-xl bg-[#eef3f8] px-3 py-2 text-sm font-semibold text-[#1f2937]"
-      >
-        Details
-      </button>
-
       {item.hasMedia ? (
         <a
           href={mediaUrl}

@@ -6,9 +6,13 @@ import crypto from "node:crypto";
 import OpenAI from "openai";
 import mongoose, { Schema, type InferSchemaType, type Model } from "mongoose";
 
+import type { ResponseStreamEvent } from "openai/resources/responses/responses";
+
 import { connectDb } from "./db.js";
 import {embedTexts} from "./chunks.js";
 import { client } from "./llm.js";
+
+import { hfClient } from "./llm.js";
 
 import type { Response } from "express";
 
@@ -121,7 +125,7 @@ ${context}`,
   ];
 }
 
-async function createStreamingLLM(transcript: string | null, question: string, context: string) {
+async function createStreamingLLMOld(transcript: string | null, question: string, context: string) {
   const input = buildLlmInput(transcript, question, context);
 
   return client.responses.create({
@@ -130,6 +134,24 @@ async function createStreamingLLM(transcript: string | null, question: string, c
     instructions: prompts.dialogInstructions,
     input,
   });
+}
+
+
+export async function createStreamingLLM(transcript: string, question: string, context: string ): Promise<AsyncIterable<ResponseStreamEvent>> {
+  const input = buildLlmInput(transcript, question, context);
+
+  const stream = await hfClient.responses.create({
+    model: config.CHAT_MODEL,
+    // Beispiel:
+    // "openai/gpt-oss-120b:groq"
+    // "meta-llama/Llama-3.1-8B-Instruct"
+    // "Qwen/Qwen2.5-72B-Instruct:fireworks"
+    stream: true,
+    instructions: prompts.dialogInstructions,
+    input: input
+  });
+
+  return stream;
 }
 
 async function createNonStreamingLLM(transcript: string | null, question: string, context: string) {
@@ -144,7 +166,7 @@ async function createNonStreamingLLM(transcript: string | null, question: string
 }
 
 
-async function streamAnswer(question: string, history: ChatTurn[], res: Response) {
+async function streamAnswerOld(question: string, history: ChatTurn[], res: Response) {
   const retrievalQuery = buildRetrievalQuery(question, history);
   const results = await search(retrievalQuery, config.TOP_K);
   const context = buildContext(results);
@@ -202,6 +224,74 @@ async function streamAnswer(question: string, history: ChatTurn[], res: Response
   res.end();
 }
 
+
+async function streamAnswer(question: string, history: ChatTurn[], res: Response) {
+  const retrievalQuery = buildRetrievalQuery(question, history);
+  const results = await search(retrievalQuery, config.TOP_K);
+  const context = buildContext(results);
+  const transcript = buildConversationTranscript(history);
+
+  const stream = await createStreamingLLM(transcript, question, context);
+
+  let fullText = "";
+
+
+
+  for await (const event of stream) {
+    if (event.type === "response.output_text.delta") {
+      const delta = event.delta ?? "";
+      fullText += delta;
+
+      res.write(
+        JSON.stringify({
+          type: "delta",
+          delta,
+        }) + "\n",
+      );
+    }
+
+      if (event.type === "response.output_text.done") {
+    fullText = event.text ?? fullText;
+  }
+
+  if (event.type === "error") {
+    throw new Error(event.message || "Streaming failed");
+  }
+
+  }
+
+
+
+  const answerData: answerType = {
+    answer: fullText.trim(),
+    sources: results.map((result) => ({
+      id: result.id,
+      docId: result.docId,
+      title: result.title,
+      source: result.source,
+      content: result.content,
+      chunkIndex: Number(result.chunkIndex),
+      uuid: result.uuid,
+      score: Number(result.score.toFixed(4)),
+    })),
+  };
+
+  //console.log(results);
+
+  const validatedResponse = answerSchema.parse(answerData);
+
+  res.write(
+    JSON.stringify({
+      type: "done",
+      answer: validatedResponse.answer,
+      sources: validatedResponse.sources,
+    }) + "\n",
+  );
+
+  res.end();
+}
+
+
 async function listModels() {
   const models = await client.models.list();
   console.log("\n=== AVAILABLE MODELS ===\n");
@@ -247,4 +337,4 @@ export { listModels, answer, streamAnswer};
 
 export { buildIndex } from "./rag_import.js";
 
-export { disconnectDb } from "./db.js"; 
+export { disconnectDb } from "./db.js";

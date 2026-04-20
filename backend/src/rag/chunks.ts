@@ -75,19 +75,14 @@ async function splitIntoChunksWithLangChain(doc: RagDocumentDb): Promise<Chunk[]
 async function embedTexts(texts: string[]): Promise<number[][]> {
 
 
-  console.log("GUTENMORGEN");
-
   const response = await client.embeddings.create({
     model: config.EMBEDDING_MODEL,
     input: texts,
     encoding_format: "float",
   });
 
-    console.log("GUTENMITTAG");
 
   return response.data.map((item) => item.embedding);
-
-   console.log("GUTENNACHMITTAG");
 
 }
 

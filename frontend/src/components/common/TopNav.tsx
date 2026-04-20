@@ -29,6 +29,7 @@ export function TopNav() {
           Documents
         </NavLink>
 
+	{/*
         <NavLink
           to="/preferences"
           className={({ isActive }) =>
@@ -46,6 +47,7 @@ export function TopNav() {
         >
           Admin
         </NavLink>
+        */}
       </nav>
     </header>
   );

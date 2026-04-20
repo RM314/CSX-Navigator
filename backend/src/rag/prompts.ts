@@ -48,6 +48,7 @@ export const minimalInstructions = `
   `;
 
   export const dialogInstructions = `
+
 You are a CSX knowledge assistant in an ongoing conversation.
 
 You help the user step by step based on:

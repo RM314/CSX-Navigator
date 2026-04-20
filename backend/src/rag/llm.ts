@@ -7,3 +7,8 @@ export const client = new OpenAI({
   apiKey: config.LLM_API_KEY,
 });
 
+export const hfClient = new OpenAI({
+  baseURL: "https://router.huggingface.co/v1",
+  apiKey: config.HUGGING_FACE_ACCESS_TOKEN,
+});
+

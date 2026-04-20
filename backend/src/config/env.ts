@@ -17,7 +17,8 @@ const envSchema = z.object({
   CHUNKS_COLLECTION: z.string(),
   VECTOR_INDEX_NAME: z.string(),
   EMBEDDING_DIMENSIONS: z.coerce.number().int().positive(),
-  TOP_K: z.coerce.number().int().positive()
+  TOP_K: z.coerce.number().int().positive(),
+  HUGGING_FACE_ACCESS_TOKEN: z.string()
 });
 
 let config = envSchema.parse(process.env);
