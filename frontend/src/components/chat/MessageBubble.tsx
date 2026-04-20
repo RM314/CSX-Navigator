@@ -13,7 +13,11 @@ export function MessageBubble({
   selectedSource,
   onSelectSource,
 }: MessageBubbleProps) {
-  const rowClass = message.role === 'user' ? 'justify-end' : 'justify-start';
+  //const rowClass = message.role === 'user' ? 'justify-end' : 'justify-start';
+  const rowClass =
+    message.role === "user"
+      ? "justify-center sm:justify-end"
+      : "justify-center sm:justify-start";
   const bubbleClass = getBubbleClass(message.role, message.streaming);
   return (
     <div className={`flex ${rowClass}`}>

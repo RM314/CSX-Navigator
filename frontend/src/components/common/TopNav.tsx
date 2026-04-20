@@ -10,7 +10,7 @@ export function TopNav() {
     <header className="sticky top-0 z-10 flex items-center justify-between gap-4 border-b border-[#d8e0ea] bg-white/95 px-6 py-4 backdrop-blur">
       <div className="text-lg font-bold text-[#1f2937]">CSX Navigator</div>
 
-      <nav className="flex flex-wrap gap-2.5">
+      <nav className="flex gap-2.5">
         <NavLink
           to="/chat"
           className={({ isActive }) =>
