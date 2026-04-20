@@ -15,7 +15,7 @@ export function ChatComposer({
 }: ChatComposerProps) {
   return (
     <div className="border-t border-[#d8e0ea] bg-white px-[18px] pb-[18px] pt-4">
-      <div className="flex items-end gap-2.5 rounded-2xl border border-[#d8e0ea] bg-[#eef3f8] p-2.5">
+      <div className="flex items-center gap-2.5 rounded-2xl border border-[#d8e0ea] bg-[#eef3f8] p-2.5">
         <textarea
           value={value}
           disabled={disabled}

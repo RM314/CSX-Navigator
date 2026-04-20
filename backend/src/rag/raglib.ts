@@ -152,65 +152,6 @@ async function createNonStreamingLLM(transcript: string | null, question: string
 }
 
 
-async function streamAnswerOld(question: string, history: ChatTurn[], res: Response) {
-  const retrievalQuery = buildRetrievalQuery(question, history);
-  const results = await search(retrievalQuery, config.TOP_K);
-  const context = buildContext(results);
-  const transcript = buildConversationTranscript(history);
-
-  const stream = await createStreamingLLM(transcript, question, context);
-
-  let fullText = "";
-
-  for await (const event of stream) {
-    if (event.type === "response.output_text.delta") {
-      const delta = event.delta ?? "";
-      fullText += delta;
-
-      res.write(
-        JSON.stringify({
-          type: "delta",
-          delta,
-        }) + "\n",
-      );
-    }
-
-    if (event.type === "response.output_text.done") {
-      fullText = event.text;
-    }
-  }
-
-  const answerData: answerType = {
-    answer: fullText.trim(),
-    sources: results.map((result) => ({
-      id: result.id,
-      docId: result.docId,
-      title: result.title,
-      source: result.source,
-      content: result.content,
-      chunkIndex: Number(result.chunkIndex),
-      uuid: result.uuid,
-      score: Number(result.score.toFixed(4)),
-    })),
-  };
-
-  //console.log(results);
-
-
-  const validatedResponse = answerSchema.parse(answerData);
-
-  res.write(
-    JSON.stringify({
-      type: "done",
-      answer: validatedResponse.answer,
-      sources: validatedResponse.sources,
-    }) + "\n",
-  );
-
-  res.end();
-}
-
-
 async function streamAnswer(question: string, history: ChatTurn[], res: Response) {
   const retrievalQuery = buildRetrievalQuery(question, history);
   const results = await search(retrievalQuery, config.TOP_K);

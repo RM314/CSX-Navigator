@@ -170,3 +170,38 @@ apiRouter.get("/documents/:id/txt", async (req, res, next) => {
     next(error);
   }
 });
+
+
+apiRouter.get("/documents/:id/any", async (req, res, next) => {
+  try {
+    const document = await RagDocument.findOne({ id: req.params.id })
+      .select({
+        id: 1,
+        media: 1,
+        extractedText: 1,
+        _id: 0,
+      });
+
+
+    if (!document) {
+      res.status(404).json({ message: "Document not found" });
+      return;
+    }
+
+    let hasMedia=true;
+
+    if (!document.media?.data || document.media.data.length === 0) {
+      hasMedia=false;
+    }
+
+    const mimeType = (hasMedia) ? document.media.mimeType || "application/octet-stream" : "text/plain";
+    const fileName =  (hasMedia) ? `${document.id}-media` :  `${document.id}-txt`
+
+    res.setHeader("Content-Type", mimeType);
+    res.setHeader("Content-Disposition", `inline; filename="${fileName}"`);
+
+    res.send(document.media.data);
+  } catch (error) {
+    next(error);
+  }
+});

@@ -97,7 +97,7 @@ async function upsertSourceDocument(doc: RagDocumentInput): Promise<RagDocumentD
     doc,
     {
       upsert: true,
-      new: true,
+      returnDocument: "after",
       setDefaultsOnInsert: true,
     },
   );

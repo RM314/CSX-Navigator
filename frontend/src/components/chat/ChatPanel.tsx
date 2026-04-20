@@ -137,30 +137,6 @@ const sendMessage = async (text: string) => {
   const nextMessages = [...messages, userMessage, assistantMessage];
   setMessages(nextMessages);
 
-  /*
-   setMessages((prev) => [
-      ...prev,
-      {
-        id: userSId,
-        role: 'user',
-        content: text,
-        meta: 'You',
-      },
-    ]);
-
-  setMessages((prev) => [
-    ...prev,
-    {
-      id: assistantId,
-      role: "assistant",
-      content: "",
-      meta: "Assistant",
-      streaming: true,
-      sources: [],
-    },
-  ]);
-  */
-
    const history = buildHistory(messages);
 
   try {
@@ -238,8 +214,11 @@ const handleSend = async () => {
 
 
   return (
-  <section className="grid h-[calc(100vh-140px)] grid-cols-[fit-content(320px)_1fr] gap-5">
-    <ContextPanel selectedSource={selectedSource} chunksById={chunksById} />
+
+    <section className="grid h-[calc(100vh-140px)] grid-cols-1 gap-5 md:grid-cols-[fit-content(320px)_1fr]">
+    <div className="hidden md:block">
+      <ContextPanel selectedSource={selectedSource} chunksById={chunksById} />
+    </div>
 
     <section className="grid h-full min-h-0 grid-rows-[auto_1fr_auto] overflow-hidden rounded-[24px] border border-[#d8e0ea] bg-white shadow-[0_16px_36px_rgba(31,41,55,0.08)]">
       <header className="flex items-center justify-between gap-4 border-b border-[#d8e0ea] px-[22px] py-5">
