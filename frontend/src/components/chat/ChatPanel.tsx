@@ -216,7 +216,7 @@ const handleSend = async () => {
   return (
 
     <section className="grid h-[calc(100vh-140px)] grid-cols-1 gap-5 md:grid-cols-[fit-content(320px)_1fr]">
-    <div className="hidden md:block">
+    <div className="hidden min-h-0 md:block">
       <ContextPanel selectedSource={selectedSource} chunksById={chunksById} />
     </div>
 
