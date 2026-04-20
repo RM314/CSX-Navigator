@@ -3,7 +3,7 @@ import { useState } from 'react';
 
 import { INITIAL_MESSAGES } from '../data';
 import type { ChatMessage } from '../types';
-import type { chunkType } from '../../../shared/raq/types';
+import type { chunkType } from '../shared/types';
 
 export type ChatShellContext = {
   messages: ChatMessage[];

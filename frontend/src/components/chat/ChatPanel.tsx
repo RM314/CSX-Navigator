@@ -6,7 +6,7 @@ import { ChatComposer } from './ChatComposer';
 import { ChatMessages } from './ChatMessages';
 import { ContextPanel } from './ContextPanel';
 
-import { type chunkType, type ChatTurn} from '../../../../shared/raq/types'
+import { type chunkType, type ChatTurn} from '../../shared/types'
 
 
 type ChatPanelProps = {

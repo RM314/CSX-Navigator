@@ -1,5 +1,5 @@
 
-import { type chunkType} from '../../../../shared/raq/types'
+import { type chunkType} from '../../shared/types'
 
 
 type SourceChipsProps = {
